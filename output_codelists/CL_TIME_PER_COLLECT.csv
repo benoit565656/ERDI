@@ -1,0 +1,9 @@
+﻿Code id,Name,Description
+A,Average of period,Each time series value is the average of the observations made throughout the associated time interval.
+B,Beginning of period,Each time series value represents a single observation made at the beginning of the associated time interval.
+E,End of period,Each time series value represents a single observation made at the end of the associated time interval.
+H,Highest in period,Each time series value is the maximum value for the time interval.
+L,Lowest in period,Each time series value is the minimum value for the time interval.
+M,Middle of period,Each time series value is the middle of period value for the time interval.
+S,Summed through period,Each time series value is the sum of observations made throughout the associated time interval.
+Y,Annualised summed,"Each time series value is the annualised sum of observations made throughout the associated time interval. For time scale conversion and totalling purposes, this attribute is the same as ""Average of period""."

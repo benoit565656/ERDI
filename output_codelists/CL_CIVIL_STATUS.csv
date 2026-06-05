@@ -1,0 +1,9 @@
+﻿Code id,Name,Description
+S,Single person,This code includes persons who have never been married or in registered partnership.
+M,Married person,This code covers both persons living in a same-sex marriage as well as in an opposite-sex marriage. This code excludes legally separated persons.
+W,Widowed person,This code includes persons whose marriage ended with the death of the partner and who are not remarried or in a registered partnership.
+D,Divorced person,This code includes persons whose marriage ended with a divorce procedure and who are not remarried or in a registered partnership.
+L,Legally separated person,"This code includes persons who are separated: they are still married, but ""officially"" separated."
+P,Person in registered partnership,This code covers both persons living in an opposite-sex registered partnership as well as in a same-sex registered partnership. Registered partnerships also include customary unions that are legal and binding under national law. This code excludes persons whose registered partnership was legally dissolved.
+Q,Person whose registered partnership ended with the death of the partner,This code includes persons whose registered partnership ended with the death of the partner and who are not remarried or in a registered partnership.
+E,Person whose registered partnership was legally dissolved,This code includes persons whose registered partnership ended with a legal procedure and who are not remarried or in a registered partnership.

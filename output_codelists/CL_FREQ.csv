@@ -1,0 +1,10 @@
+﻿Code id,Name,Description
+A,Annual,To be used for data collected or disseminated every year.
+S,"Half-yearly, semester",To be used for data collected or disseminated every semester.
+Q,Quarterly,To be used for data collected or disseminated every quarter.
+M,Monthly,To be used for data collected or disseminated every month.
+W,Weekly,To be used for data collected or disseminated every week.
+D,Daily,To be used for data collected or disseminated every day.
+H,Hourly,To be used for data collected or disseminated every hour.
+B,Daily – businessweek,"Similar to ""daily"", however there are no observations for Saturdays and Sundays (so, neither ""missing values"" nor ""numeric values"" should be provided for Saturday and Sunday). This treatment  (""business"") is one way to deal with such cases, but it is not the only option. Such a time series could alternatively be considered daily (""D""), thus, with missing values in the weekend."
+N,Minutely,"While N denotes ""minutely"", usually, there may be no observations every minute (for several series the frequency is usually ""irregular"" within a day/days). And though observations may be sparse (not collected or disseminated every minute), missing values do not need to be given for the minutes when no observations exist: in any case the time stamp determines when an observation is observed."

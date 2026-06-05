@@ -1,0 +1,22 @@
+﻿Code id,Name,Description
+203,CCYYMMDDhhmm,(Used in SDMX-EDI for series with freq. higher than daily) year/month/day/hours/minutes
+102,CCYYMMDD,(Used in SDMX-EDI for daily and business series) year/month/day
+616,CCYYWW,(Used in SDMX-EDI for weekly series) year/week
+610,CCYYMM,(Used in SDMX-EDI for monthly series) year/month
+608,CCYYQ,(Used in SDMX-EDI for quarterly series) year/quarter
+604,CCYYS,(Used in SDMX-EDI for half yearly series) year/semester
+602,CCYY,(Used in SDMX-EDI for annual series) year
+719,CCYYMMDDhhmmCCYYMMDDhhmm,(Used in SDMX-EDI for series with freq. higher than daily) year/month/day/hours/minutes to year/month/day/hours/minutes
+711,CCYYMMDDCCYYMMDD,(Used in SDMX-EDI for daily and business series) from year/month/day to year/month/day
+716,CCYYWWCCYYWW,(Used in SDMX-EDI for weekly series) from year/week to year/week
+710,CCYYMMCCYYMM,(Used in SDMX-EDI for monthly series) from year/month to year/month
+708,CCYYQCCYYQ,(Used in SDMX-EDI for quarterly series) from year/quarter to year/quarter
+704,CCYYSCCYYS,(Used in SDMX-EDI for half yearly series) from half-year to half-year
+702,CCYYCCYY,(Used in SDMX-EDI for annual series) from year to year
+P1D,Daily (or Business),Used only in SDMX-ML messages
+P1M,Monthly,Used only in SDMX-ML messages
+P1Y,Annual,Used only in SDMX-ML messages
+P3M,Quarterly,Used only in SDMX-ML messages
+P6M,"Half-yearly, semester",Used only in SDMX-ML messages
+P7D,Weekly,Used only in SDMX-ML messages
+PT1M,Minutely,Used only in SDMX-ML messages

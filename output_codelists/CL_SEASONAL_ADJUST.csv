@@ -1,0 +1,12 @@
+﻿Code id,Name,Description
+T,Trend,
+C,"Trend-cycle data, calendar adjusted",
+R,"Trend-cycle data, not calendar adjusted",
+K,Calendar component,Synonyms: Calendar effects; calendar factors
+X,Seasonal component,Synonyms: Seasonal effects; seasonal factors
+M,Seasonal and calendar components,Synonyms: Seasonal and calendar effects; seasonal and calendar factors
+I,Irregular component,Synonym: Irregular effects
+N,Neither seasonally adjusted nor calendar adjusted data,Synonyms: Raw data; unadjusted data
+S,"Seasonally adjusted data, not calendar adjusted",
+W,"Calendar adjusted data, not seasonally adjusted",
+Y,Calendar and seasonally adjusted data,

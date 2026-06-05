@@ -1,0 +1,37 @@
+{
+  "name": "erdi-data",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@ant-design/icons": "^6.2.5",
+    "@prisma/client": "^6.19.3",
+    "@tanstack/react-table": "^8.21.3",
+    "antd": "^6.4.3",
+    "next": "^16.2.7",
+    "papaparse": "^5.5.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-hook-form": "^7.77.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "prisma": "^6.19.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}

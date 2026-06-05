@@ -1,0 +1,488 @@
+﻿Code id,Name,Description,Parent
+ADV,Advanced Asia and the Pacific,Advanced Asia and the Pacific,
+W,World,World,
+REG,All ADB Regional Members,All ADB Regional Members,
+ROW,Rest of World,Rest of World,
+DWT,Developing Economies Worldwide,"Developing Countries, Total",
+DMT,Developing ADB Member Economies,Developing ADB Member Economies,
+DME,Developing ADB Member Economies,Developing ADB Member Economies,
+DEV,Developed ADB Member Economies,Developed ADB Member Economies,REG
+AUS,Australia,Australia,DEV
+AUS_10,New South Wales,New South Wales,AUS
+AUS_110,Sydney,Sydney,AUS
+AUS_120,Melbourne,Melbourne,AUS
+AUS_130,Brisbane,Brisbane,AUS
+AUS_140,Adelaide,Adelaide,AUS
+AUS_150,Perth,Perth,AUS
+AUS_160,Hobart,Hobart,AUS
+AUS_170,Darwin,Darwin,AUS
+AUS_180,Canberra,Canberra,AUS
+AUS_20,Queensland,Queensland,AUS
+AUS_30,South Australia,South Australia,AUS
+AUS_40,Tasmania,Tasmania,AUS
+AUS_50,Victoria,Victoria,AUS
+AUS_60,Western Australia,Western Australia,AUS
+AUS_70,Australian Capital Territory,Australian Capital Territory,AUS
+AUS_80,Northern Territory,Northern Territory,AUS
+NZL,New Zealand,New Zealand,DEV
+NZL_10,Auckland,Auckland,NZL
+NZL_100,Otago,Otago,NZL
+NZL_110,Southland,Southland,NZL
+NZL_120,Taranaki,Taranaki,NZL
+NZL_130,Tasman / Nelson / Marlborough / West Coast,Tasman / Nelson / Marlborough / West Coast,NZL
+NZL_140,Tasman/Nelson,Tasman/Nelson,NZL
+NZL_150,Waikato,Waikato,NZL
+NZL_160,Wellington,Wellington,NZL
+NZL_170,West Coast,West Coast,NZL
+NZL_20,Bay of Plenty,Bay of Plenty,NZL
+NZL_30,Canterbury,Canterbury,NZL
+NZL_40,Gisborne,Gisborne,NZL
+NZL_50,Gisborne / Hawke's Bay,Gisborne / Hawke's Bay,NZL
+NZL_60,Hawke's Bay,Hawke's Bay,NZL
+NZL_70,Manawatu - Whanganui,Manawatu - Whanganui,NZL
+NZL_80,Marlborough,Marlborough,NZL
+NZL_90,Northland,Northland,NZL
+JPN,Japan,Japan,DEV
+SE,Southeast Asia,Southeast Asia,DME
+SA,South Asia,South Asia,DME
+CW,Central and West Asia,Central and West Asia,DME
+EA,East Asia,East Asia,DME
+PA,The Pacific,The Pacific,DME
+AFG,Afghanistan,Afghanistan,CW
+TAJ,Tajikistan,Tajikistan,CW
+TKM,Turkmenistan,Turkmenistan,CW
+TUR,Türkiye,Türkiye,CW
+UZB,Uzbekistan,Uzbekistan,CW
+UZB_10,Republic of Karakalpakstan,Republic of Karakalpakstan,UZB
+UZB_100,Syrdarya region,Syrdarya region,UZB
+UZB_110,Tashkent region,Tashkent region,UZB
+UZB_120,Fergana region,Fergana region,UZB
+UZB_130,Khorezm region,Khorezm region,UZB
+UZB_140,Tashkent city,Tashkent city,UZB
+UZB_20,Andijan region,Andijan region,UZB
+UZB_30,Bukhara region,Bukhara region,UZB
+UZB_40,Jizzakh region,Jizzakh region,UZB
+UZB_50,Kashkadarya region,Kashkadarya region,UZB
+UZB_60,Navoi region,Navoi region,UZB
+UZB_70,Namangan region,Namangan region,UZB
+UZB_80,Samarkand region,Samarkand region,UZB
+UZB_90,Surkhandarya region,Surkhandarya region,UZB
+PAK,Pakistan,Pakistan,CW
+KGZ,Kyrgyz Republic,Kyrgyzstan,CW
+ARM,Armenia,Armenia,CW
+ARM_10,Aragatsotn,Aragatsotn,ARM
+ARM_100,Tavush,Tavush,ARM
+ARM_110,Yerevan,Yerevan,ARM
+ARM_20,Ararat,Ararat,ARM
+ARM_30,Armavir,Armavir,ARM
+ARM_40,Gegharkunik,Gegharkunik,ARM
+ARM_50,Lori,Lori,ARM
+ARM_60,Kotayk,Kotayk,ARM
+ARM_70,Shirak,Shirak,ARM
+ARM_80,Syunik,Syunik,ARM
+ARM_90,Vayots Dzor,Vayots Dzor,ARM
+KAZ,Kazakhstan,Kazakhstan,CW
+KAZ_10,Abai,Abai,KAZ
+KAZ_100,Kostanay,Kostanay,KAZ
+KAZ_110,Kyzylorda,Kyzylorda,KAZ
+KAZ_120,Mangystau,Mangystau,KAZ
+KAZ_130,South Kazakhstan,South Kazakhstan,KAZ
+KAZ_140,Pavlodar,Pavlodar,KAZ
+KAZ_150,North Kazakhstan,North Kazakhstan,KAZ
+KAZ_160,Turkistan,Turkistan,KAZ
+KAZ_170,Ulytau,Ulytau,KAZ
+KAZ_180,East Kazakhstan,East Kazakhstan,KAZ
+KAZ_190,Astana city,Astana city,KAZ
+KAZ_20,Akmola,Akmola,KAZ
+KAZ_200,Almaty city,Almaty city,KAZ
+KAZ_210,Shymkent city,Shymkent city,KAZ
+KAZ_30,Aktobe,Aktobe,KAZ
+KAZ_40,Almaty,Almaty,KAZ
+KAZ_50,Atyrau,Atyrau,KAZ
+KAZ_60,West Kazakhstan,West Kazakhstan,KAZ
+KAZ_70,Zhambyl,Zhambyl,KAZ
+KAZ_80,Zhetisu,Zhetisu,KAZ
+KAZ_90,Karagandy,Karagandy,KAZ
+GEO,Georgia,Georgia,CW
+GEO_10,Tbilisi,Tbilisi,GEO
+GEO_100,Samtskhe-Javakheti,Samtskhe-Javakheti,GEO
+GEO_110,Shida Kartli,Shida Kartli,GEO
+GEO_20,Adjara A.R.,Adjara A.R.,GEO
+GEO_30,Imereti,Imereti,GEO
+GEO_40,Racha-Lechkhumi and Kvemo Svaneti,Racha-Lechkhumi and Kvemo Svaneti,GEO
+GEO_50,Samegrelo-Zemo Svaneti,Samegrelo-Zemo Svaneti,GEO
+GEO_60,Kakheti,Kakheti,GEO
+GEO_70,Kvemo Kartli,Kvemo Kartli,GEO
+GEO_80,Guria,Guria,GEO
+GEO_90,Mtskheta-Mtianeti,Mtskheta-Mtianeti,GEO
+AZE,Azerbaijan,Azerbaijan,CW
+AZE_10,Baku city,Baku city,AZE
+AZE_100,Central Aran economic region,Central Aran economic region,AZE
+AZE_110,Mil-Mughan economic region,Mil-Mughan economic region,AZE
+AZE_120,Shaki-Zagatala economic region,Shaki-Zagatala economic region,AZE
+AZE_130,Eastern Zangazur economic region,Eastern Zangazur economic region,AZE
+AZE_140,Shirvan-Salyan economic region,Shirvan-Salyan economic region,AZE
+AZE_20,Nakhchivan Autonomous Republic,Nakhchivan Autonomous Republic,AZE
+AZE_30,Absheron-Khizi economic region,Absheron-Khizi economic region,AZE
+AZE_40,Daghlig Shirvan economic region,Daghlig Shirvan economic region,AZE
+AZE_50,Ganja-Dashkasan economic region,Ganja-Dashkasan economic region,AZE
+AZE_60,Karabakh economic region,Karabakh economic region,AZE
+AZE_70,Gazakh-Tovuz economic region,Gazakh-Tovuz economic region,AZE
+AZE_80,Guba-Khachmaz economic region,Guba-Khachmaz economic region,AZE
+AZE_90,Lankaran-Astara economic region,Lankaran-Astara economic region,AZE
+PRC,"China, People's Republic of","China
+People's Republic of China
+China (People's Republic of)",EA
+HKG,"Hong Kong, China","Hong Kong
+Hongkong
+China, Hong Kong Special Administrative Region",EA
+TAP,"Taipei,China",Taiwan,EA
+MON,Mongolia,Mongolia,EA
+MON_10,Western region,Western region,MON
+MON_100,Bulgan,Bulgan,MON
+MON_110,Uvurkhangai,Uvurkhangai,MON
+MON_120,Khuvsgul,Khuvsgul,MON
+MON_130,Orkhon,Orkhon,MON
+MON_140,Central region,Central region,MON
+MON_150,Dornogovi,Dornogovi,MON
+MON_160,Dundgovi,Dundgovi,MON
+MON_170,Umnugovi,Umnugovi,MON
+MON_180,Selenge,Selenge,MON
+MON_190,Tuv,Tuv,MON
+MON_20,Bayan-Ulgii,Bayan-Ulgii,MON
+MON_200,Darkhan-Uul,Darkhan-Uul,MON
+MON_210,Govisumber,Govisumber,MON
+MON_220,Eastern region,Eastern region,MON
+MON_230,Dornod,Dornod,MON
+MON_240,Sukhbaatar,Sukhbaatar,MON
+MON_250,Khentii,Khentii,MON
+MON_260,Ulaanbaatar,Ulaanbaatar,MON
+MON_30,Govi-Altai,Govi-Altai,MON
+MON_40,Zavkhan,Zavkhan,MON
+MON_50,Uvs,Uvs,MON
+MON_60,Khovd,Khovd,MON
+MON_70,Khangai region,Khangai region,MON
+MON_80,Arkhangai,Arkhangai,MON
+MON_90,Bayankhongor,Bayankhongor,MON
+KOR,"Korea, Republic of","South Korea,
+Republic of Korea",EA
+KOR_10,Seoul,Seoul,KOR
+KOR_100,Gangwon-do,Gangwon-do,KOR
+KOR_110,Chungcheongbuk-do,Chungcheongbuk-do,KOR
+KOR_120,Chungcheongnam-do,Chungcheongnam-do,KOR
+KOR_130,Jeollabuk-do,Jeollabuk-do,KOR
+KOR_140,Jeollanam-do,Jeollanam-do,KOR
+KOR_150,Gyeongsangbuk-do,Gyeongsangbuk-do,KOR
+KOR_160,Gyeongsangnam-do,Gyeongsangnam-do,KOR
+KOR_170,Jeju-do,Jeju-do,KOR
+KOR_20,Busan,Busan,KOR
+KOR_30,Daegu,Daegu,KOR
+KOR_40,Incheon,Incheon,KOR
+KOR_50,Gwangju,Gwangju,KOR
+KOR_60,Daejeon,Daejeon,KOR
+KOR_70,Ulsan,Ulsan,KOR
+KOR_80,Sejong,Sejong,KOR
+KOR_90,Gyeonggi-do,Gyeonggi-do,KOR
+TON,Tonga,Tonga,PA
+SOL,Solomon Islands,Solomon Islands,PA
+SAM,Samoa,Samoa,PA
+COO,Cook Islands,Cook Islands,PA
+FIJ,Fiji,Fiji,PA
+TUV,Tuvalu,Tuvalu,PA
+VAN,Vanuatu,Vanuatu,PA
+FSM,"Micronesia, Federated States of","Micronesia
+Federated States of Micronesia
+Micronesia (Federated States of)",PA
+FSM_10,Chuuk,Chuuk,FSM
+FSM_20,Kosrae,Kosrae,FSM
+FSM_30,Pohnpei,Pohnpei,FSM
+FSM_40,Yap,Yap,FSM
+RMI,Marshall Islands,"Republic of the Marshall Islands
+Republic of Marshall Islands",PA
+PLW,Palau,Palau,PA
+PNG,Papua New Guinea,Papua New Guinea,PA
+NIU,Niue,Niue,PA
+KIR,Kiribati,Kiribati,PA
+NAU,Nauru,Republic of Nauru,PA
+IND,India,India,SA
+NEP,Nepal,Nepal,SA
+NEP_10,Bagamati,Bagamati,NEP
+NEP_20,Gandaki,Gandaki,NEP
+NEP_30,Karnali,Karnali,NEP
+NEP_40,Koshi,Koshi,NEP
+NEP_50,Lumbini ,Lumbini ,NEP
+NEP_60,Madhes,Madhes,NEP
+NEP_70,Sudur Paschim,Sudur Paschim,NEP
+SRI,Sri Lanka,Sri Lanka,SA
+BAN,Bangladesh,Bangladesh,SA
+MLD,Maldives,Republic of the Maldives,SA
+BHU,Bhutan,Bhutan,SA
+INO,Indonesia,Indonesia,SE
+INO_10,Aceh,Aceh,INO
+INO_100,Kepulauan Riau,Kepulauan Riau,INO
+INO_110,Dki Jakarta,Dki Jakarta,INO
+INO_120,Jawa Barat,Jawa Barat,INO
+INO_130,Jawa Tengah,Jawa Tengah,INO
+INO_140,Di Yogyakarta,Di Yogyakarta,INO
+INO_150,Jawa Timur,Jawa Timur,INO
+INO_160,Banten,Banten,INO
+INO_170,Bali,Bali,INO
+INO_180,Nusa Tenggara Barat,Nusa Tenggara Barat,INO
+INO_190,Nusa Tenggara Timur,Nusa Tenggara Timur,INO
+INO_20,Sumatera Utara,Sumatera Utara,INO
+INO_200,Kalimantan Barat,Kalimantan Barat,INO
+INO_210,Kalimantan Tengah,Kalimantan Tengah,INO
+INO_220,Kalimantan Selatan,Kalimantan Selatan,INO
+INO_230,Kalimantan Timur,Kalimantan Timur,INO
+INO_240,Kalimantan Utara,Kalimantan Utara,INO
+INO_250,Sulawesi Utara,Sulawesi Utara,INO
+INO_260,Sulawesi Tengah,Sulawesi Tengah,INO
+INO_270,Sulawesi Selatan,Sulawesi Selatan,INO
+INO_280,Sulawesi Tenggara,Sulawesi Tenggara,INO
+INO_290,Gorontalo,Gorontalo,INO
+INO_30,Sumatera Barat,Sumatera Barat,INO
+INO_300,Sulawesi Barat,Sulawesi Barat,INO
+INO_310,Maluku,Maluku,INO
+INO_320,Maluku Utara,Maluku Utara,INO
+INO_330,Papua Barat,Papua Barat,INO
+INO_340,Papua Barat Daya,Papua Barat Daya,INO
+INO_350,Papua,Papua,INO
+INO_360,Papua Selatan,Papua Selatan,INO
+INO_370,Papua Tengah,Papua Tengah,INO
+INO_380,Papua Pegunungan,Papua Pegunungan,INO
+INO_40,Riau,Riau,INO
+INO_50,Jambi,Jambi,INO
+INO_500,Kota Meulaboh,Kota Meulaboh,INO
+INO_501,Kota Banda Aceh,Kota Banda Aceh,INO
+INO_502,Kota Lhokseumawe,Kota Lhokseumawe,INO
+INO_503,Kota Sibolga,Kota Sibolga,INO
+INO_504,Kota Pematang Siantar,Kota Pematang Siantar,INO
+INO_505,Kota Medan,Kota Medan,INO
+INO_506,Kota Padangsidimpuan,Kota Padangsidimpuan,INO
+INO_507,Kota Gunungsitoli,Kota Gunungsitoli,INO
+INO_508,Kota Padang,Kota Padang,INO
+INO_509,Kota Bukittinggi,Kota Bukittinggi,INO
+INO_510,Tembilahan,Tembilahan,INO
+INO_511,Kota Pekanbaru,Kota Pekanbaru,INO
+INO_512,Kota Dumai,Kota Dumai,INO
+INO_513,Bungo,Bungo,INO
+INO_514,Kota Jambi,Kota Jambi,INO
+INO_515,Kota Palembang,Kota Palembang,INO
+INO_516,Kota Lubuklinggau,Kota Lubuklinggau,INO
+INO_517,Kota Bengkulu,Kota Bengkulu,INO
+INO_518,Kota Bandar Lampung,Kota Bandar Lampung,INO
+INO_519,Kota Metro,Kota Metro,INO
+INO_520,Tanjung Pandan,Tanjung Pandan,INO
+INO_521,Kota Pangkal Pinang,Kota Pangkal Pinang,INO
+INO_522,Kota Batam,Kota Batam,INO
+INO_523,Kota Tanjung Pinang,Kota Tanjung Pinang,INO
+INO_524,Dki Jakarta,Dki Jakarta,INO
+INO_525,Kota Bogor,Kota Bogor,INO
+INO_526,Kota Sukabumi,Kota Sukabumi,INO
+INO_527,Kota Bandung,Kota Bandung,INO
+INO_528,Kota Cirebon,Kota Cirebon,INO
+INO_529,Kota Bekasi,Kota Bekasi,INO
+INO_530,Kota Depok,Kota Depok,INO
+INO_531,Kota Tasikmalaya,Kota Tasikmalaya,INO
+INO_532,Cilacap,Cilacap,INO
+INO_533,Purwokerto,Purwokerto,INO
+INO_534,Kudus,Kudus,INO
+INO_535,Kota Surakarta,Kota Surakarta,INO
+INO_536,Kota Semarang,Kota Semarang,INO
+INO_537,Kota Tegal,Kota Tegal,INO
+INO_538,Kota Yogyakarta,Kota Yogyakarta,INO
+INO_539,Jember,Jember,INO
+INO_540,Banyuwangi,Banyuwangi,INO
+INO_541,Sumenep,Sumenep,INO
+INO_542,Kota Kediri,Kota Kediri,INO
+INO_543,Kota Malang,Kota Malang,INO
+INO_544,Kota Probolinggo,Kota Probolinggo,INO
+INO_545,Kota Madiun,Kota Madiun,INO
+INO_546,Kota Surabaya,Kota Surabaya,INO
+INO_547,Kota Tangerang,Kota Tangerang,INO
+INO_548,Kota Cilegon,Kota Cilegon,INO
+INO_549,Kota Serang,Kota Serang,INO
+INO_550,Singaraja,Singaraja,INO
+INO_551,Kota Denpasar,Kota Denpasar,INO
+INO_552,Kota Mataram,Kota Mataram,INO
+INO_553,Kota Bima,Kota Bima,INO
+INO_554,Waingapu,Waingapu,INO
+INO_555,Maumere,Maumere,INO
+INO_556,Kota Kupang,Kota Kupang,INO
+INO_557,Sintang,Sintang,INO
+INO_558,Kota Pontianak,Kota Pontianak,INO
+INO_559,Kota Singkawang,Kota Singkawang,INO
+INO_560,Sampit,Sampit,INO
+INO_561,Kota Palangka Raya,Kota Palangka Raya,INO
+INO_562,Kota Baru,Kota Baru,INO
+INO_563,Tanjung,Tanjung,INO
+INO_564,Kota Banjarmasin,Kota Banjarmasin,INO
+INO_565,Kota Balikpapan,Kota Balikpapan,INO
+INO_566,Kota Samarinda,Kota Samarinda,INO
+INO_567,Tanjung Selor,Tanjung Selor,INO
+INO_568,Kota Tarakan,Kota Tarakan,INO
+INO_569,Kota Manado,Kota Manado,INO
+INO_570,Kota Kotamobagu,Kota Kotamobagu,INO
+INO_571,Luwuk,Luwuk,INO
+INO_572,Kota Palu,Kota Palu,INO
+INO_573,Bulukumba,Bulukumba,INO
+INO_574,Watampone,Watampone,INO
+INO_575,Kota Makassar,Kota Makassar,INO
+INO_576,Kota Pare-Pare,Kota Pare-Pare,INO
+INO_577,Kota Palopo,Kota Palopo,INO
+INO_578,Kota Kendari,Kota Kendari,INO
+INO_579,Kota Bau-Bau,Kota Bau-Bau,INO
+INO_580,Kota Gorontalo,Kota Gorontalo,INO
+INO_581,Mamuju,Mamuju,INO
+INO_582,Kota Ambon,Kota Ambon,INO
+INO_583,Kota Tual,Kota Tual,INO
+INO_584,Kota Ternate,Kota Ternate,INO
+INO_585,Manokwari,Manokwari,INO
+INO_586,Kota Sorong,Kota Sorong,INO
+INO_587,Merauke,Merauke,INO
+INO_588,Timika,Timika,INO
+INO_589,Kota Jayapura,Kota Jayapura,INO
+INO_60,Sumatera Selatan,Sumatera Selatan,INO
+INO_70,Bengkulu,Bengkulu,INO
+INO_80,Lampung,Lampung,INO
+INO_90,Kepulauan Bangka Belitung,Kepulauan Bangka Belitung,INO
+VIE,Viet Nam,Vietnam,SE
+LAO,Lao People's Democratic Republic,Lao People's Democratic Republic,SE
+MAL,Malaysia,Malaysia,SE
+MAL_10,Johor,Johor,MAL
+MAL_100,Selangor,Selangor,MAL
+MAL_110,Terengganu,Terengganu,MAL
+MAL_120,Sabah,Sabah,MAL
+MAL_130,Sarawak,Sarawak,MAL
+MAL_140,Wilayah Persekutuan Kuala Lumpur,Wilayah Persekutuan Kuala Lumpur,MAL
+MAL_150,Wilayah Persekutuan Labuan,Wilayah Persekutuan Labuan,MAL
+MAL_160,Wilayah Persekutuan Putrajaya,Wilayah Persekutuan Putrajaya,MAL
+MAL_170,Supra,Supra,MAL
+MAL_20,Kedah,Kedah,MAL
+MAL_30,Kelantan,Kelantan,MAL
+MAL_40,Melaka,Melaka,MAL
+MAL_50,Negeri Sembilan,Negeri Sembilan,MAL
+MAL_60,Pahang,Pahang,MAL
+MAL_70,Pulau Pinang,Pulau Pinang,MAL
+MAL_80,Perak,Perak,MAL
+MAL_90,Perlis,Perlis,MAL
+TIM,Timor-Leste,Timor Leste,SE
+TIM_10,"Region 1 ( Baucau, Lautem and Viqueque; Region)","Region 1 ( Baucau, Lautem and Viqueque; Region)",TIM
+TIM_100,Bobonaro,Bobonaro,TIM
+TIM_110,Cova Lima,Cova Lima,TIM
+TIM_120,Ermera,Ermera,TIM
+TIM_130,Lautém,Lautém,TIM
+TIM_140,Liquiçá,Liquiçá,TIM
+TIM_150,Manatuto,Manatuto,TIM
+TIM_160,Manufahi,Manufahi,TIM
+TIM_170,Oecussi-Ambeno,Oecussi-Ambeno,TIM
+TIM_180,Viqueque,Viqueque,TIM
+TIM_20,"Region 2 (Ainaro, Manufahi and Manatuto)","Region 2 (Ainaro, Manufahi and Manatuto)",TIM
+TIM_30,"Region 3 (Aileu, Dili and Ermera)","Region 3 (Aileu, Dili and Ermera)",TIM
+TIM_40,"Region 4 (Bobonaro, Cova Lima and Liquiçá¡)","Region 4 (Bobonaro, Cova Lima and Liquiçá)",TIM
+TIM_50,Region 5 (Oecussi),Region 5 (Oecussi),TIM
+TIM_60,Dili,Dili,TIM
+TIM_70,Aileu,Aileu,TIM
+TIM_80,Ainaro,Ainaro,TIM
+TIM_90,Baucau,Baucau,TIM
+THA,Thailand,Thailand,SE
+THA_10,Krung Thep Maha Nakhon (Bangkok),Krung Thep Maha Nakhon (Bangkok),THA
+THA_100,Saraburi,Saraburi,THA
+THA_110,Chon Buri,Chon Buri,THA
+THA_120,Rayong,Rayong,THA
+THA_130,Chanthaburi,Chanthaburi,THA
+THA_140,Trat,Trat,THA
+THA_150,Chachoengsao,Chachoengsao,THA
+THA_160,Prachin Buri,Prachin Buri,THA
+THA_170,Nakhon Nayok,Nakhon Nayok,THA
+THA_180,Sa Kaeo,Sa Kaeo,THA
+THA_190,Ratchaburi,Ratchaburi,THA
+THA_20,Samut Prakan,Samut Prakan,THA
+THA_200,Kanchanaburi,Kanchanaburi,THA
+THA_210,Suphan Buri,Suphan Buri,THA
+THA_220,Nakhon Pathom,Nakhon Pathom,THA
+THA_230,Samut Sakhon,Samut Sakhon,THA
+THA_240,Samut Songkhram,Samut Songkhram,THA
+THA_250,Phetchaburi,Phetchaburi,THA
+THA_260,Prachuap Khiri Khan,Prachuap Khiri Khan,THA
+THA_270,Chiang Mai,Chiang Mai,THA
+THA_280,Lamphun,Lamphun,THA
+THA_290,Lampang,Lampang,THA
+THA_30,Nonthaburi,Nonthaburi,THA
+THA_300,Uttaradit,Uttaradit,THA
+THA_310,Phrae,Phrae,THA
+THA_320,Nan,Nan,THA
+THA_330,Phayao,Phayao,THA
+THA_340,Chiang Rai,Chiang Rai,THA
+THA_350,Mae Hong Son,Mae Hong Son,THA
+THA_360,Nakhon Sawan,Nakhon Sawan,THA
+THA_370,Uthai Thani,Uthai Thani,THA
+THA_380,Kamphaeng Phet,Kamphaeng Phet,THA
+THA_390,Tak,Tak,THA
+THA_40,Pathum Thani,Pathum Thani,THA
+THA_400,Sukhothai,Sukhothai,THA
+THA_410,Phitsanulok,Phitsanulok,THA
+THA_420,Phichit,Phichit,THA
+THA_430,Phetchabun,Phetchabun,THA
+THA_440,Nakhon Ratchasima,Nakhon Ratchasima,THA
+THA_450,Buri Ram,Buri Ram,THA
+THA_460,Surin,Surin,THA
+THA_470,Si Sa Ket,Si Sa Ket,THA
+THA_480,Ubon Ratchathani,Ubon Ratchathani,THA
+THA_490,Yasothon,Yasothon,THA
+THA_50,Phra Nakhon Si Ayutthaya,Phra Nakhon Si Ayutthaya,THA
+THA_500,Chaiyaphum,Chaiyaphum,THA
+THA_510,Amnat Charoen,Amnat Charoen,THA
+THA_520,Bueng Kan,Bueng Kan,THA
+THA_530,Nong Bua Lam Phu,Nong Bua Lam Phu,THA
+THA_540,Khon Kaen,Khon Kaen,THA
+THA_550,Udon Thani,Udon Thani,THA
+THA_560,Loei,Loei,THA
+THA_570,Nong Khai,Nong Khai,THA
+THA_580,Maha Sarakham,Maha Sarakham,THA
+THA_590,Roi Et,Roi Et,THA
+THA_60,Ang Thong,Ang Thong,THA
+THA_600,Kalasin,Kalasin,THA
+THA_610,Sakon Nakhon,Sakon Nakhon,THA
+THA_620,Nakhon Phanom,Nakhon Phanom,THA
+THA_630,Mukdahan,Mukdahan,THA
+THA_640,Nakhon Si Thammarat,Nakhon Si Thammarat,THA
+THA_650,Krabi,Krabi,THA
+THA_660,Phangnga,Phangnga,THA
+THA_670,Phuket,Phuket,THA
+THA_680,Surat Thani,Surat Thani,THA
+THA_690,Ranong,Ranong,THA
+THA_70,Lop Buri,Lop Buri,THA
+THA_700,Chumphon,Chumphon,THA
+THA_710,Songkhla,Songkhla,THA
+THA_720,Satun,Satun,THA
+THA_730,Trang,Trang,THA
+THA_740,Phatthalung,Phatthalung,THA
+THA_750,Pattani,Pattani,THA
+THA_760,Yala,Yala,THA
+THA_770,Narathiwat,Narathiwat,THA
+THA_80,Sing Buri,Sing Buri,THA
+THA_90,Chai Nat,Chai Nat,THA
+MYA,Myanmar,Myanmar,SE
+BRU,Brunei Darussalam,Brunei Darussalam,SE
+SIN,Singapore,Singapore,SE
+CAM,Cambodia,Cambodia,SE
+PHI,Philippines,Philippines,SE
+PHI_BIG,Bicol Region,Region V (Bicol Region),PHI
+PHI_BRM,BARMM,Bangsamoro Autonomous Region in Muslim Mindanao (BARMM),PHI
+PHI_CAR,CAR,Cordillera Administrative Region (CAR),PHI
+PHI_CGV,Cagayan Valley,Region II (Cagayan Valley),PHI
+PHI_CLZ,CALABARZON,Region IV-A (CALABARZON),PHI
+PHI_CRG,Caraga,Region XIII (Caraga),PHI
+PHI_CRL,Central Luzon,Region III (Central Luzon),PHI
+PHI_CTV,Central Visayas,Region VII (Central Visayas),PHI
+PHI_DVR,Davao Region,Region XI (Davao Region),PHI
+PHI_ETV,Eastern Visayas,Region VIII (Eastern Visayas),PHI
+PHI_ILR,Ilocos Region,Region I (Ilocos Region),PHI
+PHI_MPA,MIMAROPA,MIMAROPA Region,PHI
+PHI_NCR,NCR,National Capital Region (NCR),PHI
+PHI_NIR,Negros Island Region (NIR),Negros Island Region (NIR),PHI
+PHI_NTM,Northern Mindanao,Region X (Northern Mindanao),PHI
+PHI_SKG,SOCCSKSARGEN,Region XII (SOCCSKSARGEN),PHI
+PHI_WTV,Western Visayas,Region VI (Western Visayas),PHI
+PHI_ZBP,Zamboanga Peninsula,Region IX (Zamboanga Peninsula),PHI
