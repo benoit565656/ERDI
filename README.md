@@ -6,8 +6,8 @@ The database is built on PostgreSQL, utilizing Prisma ORM for schema definition,
 
 ## Database Architecture Overview
 
-The database contains **47 tables** structured into several modules:
-1. **Organizational & Ownership Normalization:** `departments`, `divisions` (ownership of datasets).
+The database contains **45 tables** structured into several modules:
+1. **Division Context:** `divisionCode` (ownership of datasets conceptually managed as code lists).
 2. **SDMX Structure Definitions:** `dsds`, `dsd_components`, `concept_schemes`, `concepts` (capturing SDMX CSV models).
 3. **Thematic Classification:** `themes`, `indicator_theme_mapping` (many-to-many theme hierarchy support).
 4. **Dataflows & Constraints:** `dataflows` (main/secondary layers), `dataflow_constraints`, `dataflow_constraint_items` (constraints on allowed dimension values).
@@ -17,7 +17,7 @@ The database contains **47 tables** structured into several modules:
 
 ### Custom Constraints & Indexes
 - **Partial Unique Index (`idx_unique_published_observation`):** Enforces that only **one published observation value** exists for any unique combination of dimensions (represented by `observation_hash`) at any time, while allowing draft versions and audit history to coexist.
-- **NULLS NOT DISTINCT Unique Indexes:** Enforces composite unique constraints where null values are present on tables like `indicator_dataset_metadata`, `indicator_dataflow_mapping`, `harmonization_rules`, `currency_exchange_rates`, `regional_definitions`, and `regional_weights`.
+- **NULLS NOT DISTINCT Unique Indexes:** Enforces composite unique constraints where null values are present on tables like `indicator_dataset_metadata`, `indicator_dataflow_mapping`, `harmonization_rules`, `regional_definitions`, and `regional_weights`.
 
 ---
 
@@ -65,7 +65,7 @@ To check database row counts and confirm successful seeding:
 ```bash
 node scratch/check_db.js
 ```
-This script queries all 47 models and prints their row counts.
+This script queries all 45 models and prints their row counts.
 
 ---
 
