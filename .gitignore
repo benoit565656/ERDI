@@ -4,3 +4,6 @@ scratch/
 db_logfile
 db_data/
 *.log
+.next/
+*.tsbuildinfo
+
