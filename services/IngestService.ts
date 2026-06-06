@@ -266,24 +266,36 @@ export class IngestService {
           }
         }
 
-        // Validate dataflow constraints
+        // Validate dataflow constraints — WARNING only (constraints guard publishing, not ingest)
         if (economyVal && constraintMap.has('ECONOMY_CODE')) {
           if (!constraintMap.get('ECONOMY_CODE')!.has(economyVal)) {
-            logMsg(Severity.ERROR, 'CL_ECONOMY_CODES', `Economy ${economyVal} violates active constraint restrictions for this dataflow.`);
+            logMsg(Severity.WARNING, 'CL_ECONOMY_CODES', `Economy ${economyVal} is outside active constraint for this dataflow. Row ingested as DRAFT; will be blocked at publish.`);
           }
         }
         if (indicatorVal && constraintMap.has('INDICATOR')) {
           if (!constraintMap.get('INDICATOR')!.has(indicatorVal)) {
-            logMsg(Severity.ERROR, 'CL_KIDB_INDICATORS', `Indicator ${indicatorVal} violates active constraint restrictions for this dataflow.`);
+            logMsg(Severity.WARNING, 'CL_KIDB_INDICATORS', `Indicator ${indicatorVal} is outside active constraint for this dataflow. Row ingested as DRAFT; will be blocked at publish.`);
           }
         }
 
         // Parse obsValue
+        // Statistical data commonly uses … / .. / ... as "not available" markers,
+        // and <N or >N as below/above-threshold indicators.
+        // Treat all non-numeric values as null obs_value with a WARNING.
         let parsedObsValue: number | null = null;
         if (obsValueStr !== null) {
-          parsedObsValue = parseFloat(obsValueStr);
-          if (isNaN(parsedObsValue)) {
-            logMsg(Severity.ERROR, 'OBS_VALUE', `Invalid numeric observation value: ${obsValueStr}`);
+          const cleaned = obsValueStr.trim();
+          // Detect common NA markers: dots, ellipsis characters, threshold expressions
+          const isNaMarker = /^[.…]+$/.test(cleaned) || /^[<>]=?/.test(cleaned) || cleaned === 'n.a.' || cleaned === 'N/A' || cleaned === '-';
+          if (isNaMarker) {
+            parsedObsValue = null;
+            logMsg(Severity.WARNING, 'OBS_VALUE', `Non-numeric observation value treated as null: "${cleaned}"`);
+          } else {
+            parsedObsValue = parseFloat(cleaned);
+            if (isNaN(parsedObsValue)) {
+              parsedObsValue = null;
+              logMsg(Severity.WARNING, 'OBS_VALUE', `Unrecognised observation value treated as null: "${cleaned}"`);
+            }
           }
         }
 
@@ -417,130 +429,154 @@ export class IngestService {
         });
       }
 
-      // 6. Database Upserts inside a Prisma transaction
+      // 6. Database Upserts — chunked to avoid transaction timeouts.
+      //    Strategy:
+      //      a) Pre-load all existing observation hashes for this dataset in one query.
+      //      b) Process validRowsData in chunks of CHUNK_SIZE.
+      //      c) Each chunk runs in its own short transaction (60 s limit).
+      //    This avoids the single-giant-transaction problem for large files (100k+ rows).
+
+      const CHUNK_SIZE = 500;
       const importedObservationIds: string[] = [];
 
-      await prisma.$transaction(async (tx) => {
-        for (const item of validRowsData) {
-          const obsData = item.obsRecord;
+      // Pre-load all existing observations for this dataset (hash → record)
+      // Done outside any transaction so there's no timeout risk.
+      console.log(`    Loading existing hashes for dataset ${datasetCode}...`);
+      const existingObservations = await prisma.observation.findMany({
+        where: { datasetCode },
+        select: {
+          id: true,
+          observationHash: true,
+          workflowStatus: true,
+          isPublished: true,
+          obsValue: true,
+          unitCode: true,
+          unitMultCode: true,
+          decimalsCode: true,
+          obsStatusCode: true,
+          refYear: true,
+          baseYear: true,
+          dataSource: true,
+          methodology: true,
+          footnote: true,
+          divisionCode: true,
+        },
+      });
+      const existingMap = new Map(existingObservations.map((o) => [o.observationHash, o]));
+      console.log(`    Found ${existingMap.size} existing observations.`);
 
-          // Check if observation already exists by hash
-          const existing = await tx.observation.findFirst({
-            where: {
-              datasetCode: obsData.datasetCode,
-              observationHash: obsData.observationHash,
-            },
-          });
+      const totalChunks = Math.ceil(validRowsData.length / CHUNK_SIZE);
 
-          let obsId = '';
+      for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+        const chunk = validRowsData.slice(chunkIdx * CHUNK_SIZE, (chunkIdx + 1) * CHUNK_SIZE);
+        const chunkIds: string[] = [];
+        const warningMsgs: any[] = [];
 
-          if (existing) {
-            obsId = existing.id;
+        await prisma.$transaction(async (tx) => {
+          for (const item of chunk) {
+            const obsData = item.obsRecord;
+            const existing = existingMap.get(obsData.observationHash) ?? null;
+            let obsId = '';
 
-            // Block updates if already published
-            if (existing.workflowStatus === WorkflowStatus.PUBLISHED) {
-              // Write a warning message and skip
-              await tx.importValidationMessage.create({
-                data: {
+            if (existing) {
+              obsId = existing.id;
+
+              // Block updates if already published
+              if (existing.workflowStatus === WorkflowStatus.PUBLISHED) {
+                warningMsgs.push({
                   importBatchId: batch.id,
                   rowNumber: item.rowNumber,
                   severity: Severity.WARNING,
                   fieldName: 'isPublished',
                   message: `Cannot update published observation (hash: ${obsData.observationHash}). Update skipped.`,
+                });
+                continue;
+              }
+
+              // Document field-level changes in ObservationHistory
+              const fieldsToCheck: (keyof typeof obsData)[] = [
+                'obsValue', 'unitCode', 'unitMultCode', 'decimalsCode',
+                'obsStatusCode', 'refYear', 'baseYear', 'dataSource',
+                'methodology', 'footnote', 'divisionCode',
+              ];
+              for (const f of fieldsToCheck) {
+                const oldVal = (existing as any)[f];
+                const newVal = (obsData as any)[f];
+                if (oldVal !== newVal) {
+                  await tx.observationHistory.create({
+                    data: {
+                      observationId: existing.id,
+                      changeType: ChangeType.UPDATE,
+                      fieldName: String(f),
+                      oldValue: oldVal !== null ? String(oldVal) : 'null',
+                      newValue: newVal !== null ? String(newVal) : 'null',
+                      reason: 'Observation updated via CSV ingest',
+                      sourceFileName: fileName,
+                      importBatchId: batch.id,
+                      changedBy: uploadedBy,
+                    },
+                  });
+                }
+              }
+
+              // Update existing observation
+              await tx.observation.update({
+                where: { id: existing.id },
+                data: {
+                  ...obsData,
+                  workflowStatus: WorkflowStatus.DRAFT,
+                  isPublished: false,
+                  publishedAt: null,
+                  updatedBy: uploadedBy,
                 },
               });
-              continue;
+            } else {
+              // Create new observation
+              const created = await tx.observation.create({
+                data: {
+                  ...obsData,
+                  workflowStatus: WorkflowStatus.DRAFT,
+                  createdBy: uploadedBy,
+                },
+              });
+              obsId = created.id;
+              // Cache for later chunks (handles duplicate hashes within same file)
+              existingMap.set(obsData.observationHash, { ...obsData, id: obsId, workflowStatus: WorkflowStatus.DRAFT, isPublished: false } as any);
             }
 
-            // Document changes in ObservationHistory
-            const fieldsToCheck: (keyof typeof obsData)[] = [
-              'obsValue', 'unitCode', 'unitMultCode', 'decimalsCode',
-              'obsStatusCode', 'refYear', 'baseYear', 'dataSource',
-              'methodology', 'footnote', 'divisionCode'
-            ];
+            chunkIds.push(obsId);
 
-            for (const f of fieldsToCheck) {
-              const oldVal = (existing as any)[f];
-              const newVal = (obsData as any)[f];
-              if (oldVal !== newVal) {
-                await tx.observationHistory.create({
-                  data: {
-                    observationId: existing.id,
-                    changeType: ChangeType.UPDATE,
-                    fieldName: String(f),
-                    oldValue: oldVal !== null ? String(oldVal) : 'null',
-                    newValue: newVal !== null ? String(newVal) : 'null',
-                    reason: 'Observation updated via CSV ingest',
-                    sourceFileName: fileName,
-                    importBatchId: batch.id,
-                    changedBy: uploadedBy,
-                  },
-                });
-              }
+            // Save extra dimensions
+            for (const d of item.extraDimensions) {
+              await tx.observationExtraDimension.upsert({
+                where: { observationId_conceptCode: { observationId: obsId, conceptCode: d.conceptCode } },
+                update: { codeValue: d.codeValue },
+                create: { observationId: obsId, conceptCode: d.conceptCode, codeValue: d.codeValue },
+              });
             }
 
-            // Update Observation
-            await tx.observation.update({
-              where: { id: existing.id },
-              data: {
-                ...obsData,
-                workflowStatus: WorkflowStatus.DRAFT, // Reset to draft
-                isPublished: false,
-                publishedAt: null,
-                updatedBy: uploadedBy,
-              },
-            });
-          } else {
-            // Create New Observation
-            const created = await tx.observation.create({
-              data: {
-                ...obsData,
-                workflowStatus: WorkflowStatus.DRAFT,
-                createdBy: uploadedBy,
-              },
-            });
-            obsId = created.id;
+            // Save attributes
+            for (const a of item.attributes) {
+              await tx.observationAttribute.upsert({
+                where: { observationId_conceptCode: { observationId: obsId, conceptCode: a.conceptCode } },
+                update: { value: a.value },
+                create: { observationId: obsId, conceptCode: a.conceptCode, value: a.value },
+              });
+            }
           }
+        }, { timeout: 60000 }); // 60 s per chunk of 500 rows
 
-          importedObservationIds.push(obsId);
-
-          // Save Observation Extra Dimensions
-          for (const d of item.extraDimensions) {
-            await tx.observationExtraDimension.upsert({
-              where: {
-                observationId_conceptCode: {
-                  observationId: obsId,
-                  conceptCode: d.conceptCode,
-                },
-              },
-              update: { codeValue: d.codeValue },
-              create: {
-                observationId: obsId,
-                conceptCode: d.conceptCode,
-                codeValue: d.codeValue,
-              },
-            });
-          }
-
-          // Save Observation Attributes
-          for (const a of item.attributes) {
-            await tx.observationAttribute.upsert({
-              where: {
-                observationId_conceptCode: {
-                  observationId: obsId,
-                  conceptCode: a.conceptCode,
-                },
-              },
-              update: { value: a.value },
-              create: {
-                observationId: obsId,
-                conceptCode: a.conceptCode,
-                value: a.value,
-              },
-            });
-          }
+        // Persist any skipped-published warnings outside the transaction
+        if (warningMsgs.length > 0) {
+          await prisma.importValidationMessage.createMany({ data: warningMsgs });
         }
-      });
+
+        importedObservationIds.push(...chunkIds);
+
+        if ((chunkIdx + 1) % 10 === 0 || chunkIdx + 1 === totalChunks) {
+          console.log(`    Chunk ${chunkIdx + 1}/${totalChunks} — ${importedObservationIds.length} rows committed so far`);
+        }
+      }
 
       // 7. Recalculate Harmonization in Service Layer
       if (importedObservationIds.length > 0) {
