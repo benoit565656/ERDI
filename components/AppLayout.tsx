@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Layout, Menu, Button, Breadcrumb, Space, Avatar, Tooltip, ConfigProvider } from 'antd';
+import { Layout, Menu, Button, Breadcrumb, Space, Avatar, Tooltip, ConfigProvider, theme } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -19,11 +19,11 @@ import {
   UserOutlined,
   BranchesOutlined,
   OrderedListOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUIStore } from '@/lib/store';
 import Link from 'next/link';
-
 const { Header, Sider, Content, Footer } = Layout;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -31,6 +31,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '';
 
   const { themeMode, sidebarCollapsed, toggleThemeMode, setSidebarCollapsed } = useUIStore();
+
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
 
   // Define sidebar menu options using Next.js Link
   const menuItems = useMemo(() => [
@@ -40,9 +46,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       label: <Link href="/dashboard">Dashboard</Link>,
     },
     {
-      key: 'structure-group',
+      key: 'agency-setup-group',
       icon: <ClusterOutlined />,
-      label: 'Structure',
+      label: 'Agency Setup',
       children: [
         {
           key: '/structure/agencies',
@@ -58,34 +64,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         },
         {
           key: '/structure/hierarchy',
-          icon: <BranchesOutlined />,
           label: <Link href="/structure/hierarchy">Visual Hierarchy</Link>,
-        },
-        {
-          key: '/structure/dsds',
-          label: <Link href="/structure/dsds">DSDs</Link>,
         },
         {
           key: '/structure/concept-schemes',
           label: <Link href="/structure/concept-schemes">Concept Schemes</Link>,
         },
-      ],
-    },
-    {
-      key: 'codelists-group',
-      icon: <OrderedListOutlined />,
-      label: 'Code Lists',
-      children: [
         {
           key: '/codelists',
-          label: <Link href="/codelists">Code Lists Manager</Link>,
+          label: <Link href="/codelists">Code Lists</Link>,
+        },
+        {
+          key: '/structure/dsds',
+          label: <Link href="/structure/dsds">DSDs</Link>,
         },
       ],
     },
     {
-      key: 'data-group',
+      key: 'editorial-categories-group',
+      icon: <BranchesOutlined />,
+      label: 'Front-End Editorial',
+      children: [
+        {
+          key: '/structure/category-sets',
+          label: <Link href="/structure/category-sets">Category Sets</Link>,
+        },
+        {
+          key: '/structure/category-builder',
+          label: <Link href="/structure/category-builder">Category Builder</Link>,
+        },
+      ],
+    },
+    {
+      key: 'observation-data-group',
       icon: <DatabaseOutlined />,
-      label: 'Data',
+      label: 'Observation Data',
       children: [
         {
           key: '/data/indicators',
@@ -97,19 +110,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         },
         {
           key: '/data/observations',
-          label: <Link href="/data/observations">Observations Grid</Link>,
+          label: <Link href="/data/observations">Observation Values</Link>,
         },
       ],
     },
     {
-      key: '/imports',
+      key: 'ingestion-stream-group',
       icon: <CloudUploadOutlined />,
-      label: <Link href="/imports">Import Center</Link>,
-    },
-    {
-      key: '/harmonization',
-      icon: <InteractionOutlined />,
-      label: <Link href="/harmonization">Harmonization</Link>,
+      label: 'Ingestion Stream',
+      children: [
+        {
+          key: '/imports',
+          label: <Link href="/imports">Imports & Ingest</Link>,
+        },
+        {
+          key: '/harmonization',
+          label: <Link href="/harmonization">Harmonization</Link>,
+        },
+        {
+          key: '/harmonization/unit-quality',
+          label: (
+            <Link href="/harmonization/unit-quality">
+              <ExperimentOutlined style={{ marginRight: 6, color: '#f59e0b' }} />
+              Unit Quality Check
+            </Link>
+          ),
+        },
+      ],
     },
     {
       key: '/explorer',
@@ -160,140 +187,159 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Find currently open submenu keys
   const openKeys = useMemo(() => {
-    if (pathname.startsWith('/structure')) return ['structure-group'];
-    if (pathname.startsWith('/data')) return ['data-group'];
-    if (pathname.startsWith('/codelists')) return ['codelists-group'];
+    if (pathname.startsWith('/structure') || pathname.startsWith('/codelists')) return ['agency-setup-group'];
+    if (pathname.startsWith('/data')) return ['observation-data-group'];
+    if (pathname.startsWith('/imports') || pathname.startsWith('/harmonization')) return ['ingestion-stream-group'];
     return [];
   }, [pathname]);
 
+  const algorithm = mounted && themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm;
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      {/* Sidebar Navigation */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={sidebarCollapsed}
-        theme={themeMode}
-        width={250}
-        style={{
-          boxShadow: '2px 0 8px 0 rgba(29,35,41,0.05)',
-          zIndex: 10,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-        }}
-      >
-        {/* Brand Logo Header */}
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-            padding: sidebarCollapsed ? '0' : '0 24px',
-            borderBottom: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
-            overflow: 'hidden',
-          }}
-        >
-          <Space size="middle">
-            <ClusterOutlined style={{ fontSize: 24, color: '#6366f1' }} />
-            {!sidebarCollapsed && (
-              <span
-                style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  color: themeMode === 'dark' ? '#fff' : '#000',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                ERDI Platform Admin
-              </span>
-            )}
-          </Space>
-        </div>
-
-        {/* Menu Navigation Links */}
-        <Menu
-          mode="inline"
+    <ConfigProvider
+      theme={{
+        algorithm,
+        token: {
+          colorPrimary: '#6366f1', // Sleek Indigo
+          colorInfo: '#3b82f6',     // Info Blue
+          borderRadius: 8,          // Modern rounded corners
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+        },
+        components: {
+          Checkbox: {
+            borderRadiusSM: 4,
+          },
+        },
+      }}
+    >
+      <Layout style={{ minHeight: '100vh' }}>
+        {/* Sidebar Navigation */}
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={sidebarCollapsed}
           theme={themeMode}
-          selectedKeys={selectedKeys}
-          defaultOpenKeys={openKeys}
-          style={{ borderRight: 0, paddingTop: 16 }}
-          items={menuItems}
-        />
-      </Sider>
-
-      {/* Main App Layout */}
-      <Layout>
-        {/* Header Bar */}
-        <Header
+          width={250}
           style={{
-            background: themeMode === 'dark' ? '#1f1f1f' : '#fff',
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
-            boxShadow: '0 1px 4px rgba(0,21,41,0.08)',
+            boxShadow: '2px 0 8px 0 rgba(29,35,41,0.05)',
+            zIndex: 10,
             position: 'sticky',
             top: 0,
-            zIndex: 9,
-            height: 64,
+            height: '100vh',
           }}
         >
-          <Space size="large">
-            {/* Collapse Trigger Button */}
-            <Button
-              type="text"
-              icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              style={{ fontSize: 16, width: 64, height: 64 }}
-            />
-            
-            {/* Breadcrumb Navigation */}
-            <Breadcrumb items={breadcrumbItems} />
-          </Space>
+          {/* Brand Logo Header */}
+          <div
+            style={{
+              height: 64,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              padding: sidebarCollapsed ? '0' : '0 24px',
+              borderBottom: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+              overflow: 'hidden',
+            }}
+          >
+            <Space size="middle">
+              <ClusterOutlined style={{ fontSize: 24, color: '#6366f1' }} />
+              {!sidebarCollapsed && (
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    color: themeMode === 'dark' ? '#fff' : '#000',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ERDI Platform Admin
+                </span>
+              )}
+            </Space>
+          </div>
 
-          <Space size="middle">
-            {/* Dark Mode Switcher */}
-            <Tooltip title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+          {/* Menu Navigation Links */}
+          <Menu
+            mode="inline"
+            theme={themeMode}
+            selectedKeys={selectedKeys}
+            defaultOpenKeys={openKeys}
+            style={{ borderRight: 0, paddingTop: 16 }}
+            items={menuItems}
+          />
+        </Sider>
+
+        {/* Main App Layout */}
+        <Layout>
+          {/* Header Bar */}
+          <Header
+            style={{
+              background: themeMode === 'dark' ? '#1f1f1f' : '#fff',
+              padding: '0 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderBottom: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
+              boxShadow: '0 1px 4px rgba(0,21,41,0.08)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 9,
+              height: 64,
+            }}
+          >
+            <Space size="large">
+              {/* Collapse Trigger Button */}
               <Button
                 type="text"
-                shape="circle"
-                icon={themeMode === 'dark' ? <BulbFilled style={{ color: '#eab308' }} /> : <BulbOutlined />}
-                onClick={toggleThemeMode}
-                style={{ fontSize: 18 }}
+                icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                style={{ fontSize: 16, width: 64, height: 64 }}
               />
-            </Tooltip>
+              
+              {/* Breadcrumb Navigation */}
+              <Breadcrumb items={breadcrumbItems} />
+            </Space>
 
-            {/* Profile Avatar */}
-            <Tooltip title="Administrator (ERDI)">
-              <Avatar
-                style={{ backgroundColor: '#6366f1', verticalAlign: 'middle', cursor: 'pointer' }}
-                icon={<UserOutlined />}
-              />
-            </Tooltip>
-          </Space>
-        </Header>
+            <Space size="middle">
+              {/* Dark Mode Switcher */}
+              <Tooltip title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={themeMode === 'dark' ? <BulbFilled style={{ color: '#eab308' }} /> : <BulbOutlined />}
+                  onClick={toggleThemeMode}
+                  style={{ fontSize: 18 }}
+                />
+              </Tooltip>
 
-        {/* Dynamic Content Panel */}
-        <Content
-          style={{
-            margin: '24px 24px 0',
-            minHeight: 280,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {children}
-        </Content>
+              {/* Profile Avatar */}
+              <Tooltip title="Administrator (ERDI)">
+                <Avatar
+                  style={{ backgroundColor: '#6366f1', verticalAlign: 'middle', cursor: 'pointer' }}
+                  icon={<UserOutlined />}
+                />
+              </Tooltip>
+            </Space>
+          </Header>
 
-        {/* Footer */}
-        <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>
-          ERDI Statistical Platform Administration Panel ©2026 Developed by Antigravity
-        </Footer>
+          {/* Dynamic Content Panel */}
+          <Content
+            style={{
+              margin: '24px 24px 0',
+              minHeight: 280,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {children}
+          </Content>
+
+          {/* Footer */}
+          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>
+            ERDI Statistical Platform Administration Panel ©2026 Developed by Antigravity
+          </Footer>
+        </Layout>
       </Layout>
-    </Layout>
+    </ConfigProvider>
   );
 }

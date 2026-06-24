@@ -45,3 +45,28 @@ body.dark-mode-bg ::-webkit-scrollbar-track {
 .ant-card:hover {
   box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
 }
+
+/* Ensure checkboxes are square with rounded corners, not circular */
+.ant-checkbox-inner {
+  border-radius: 4px !important;
+}
+
+/* Custom hover link style for Data Explorer selection controls */
+.hover-link {
+  transition: color 0.2s ease;
+}
+
+.hover-link:hover {
+  color: #0b45c6 !important;
+  text-decoration: underline !important;
+}
+
+/* Prevent buttons from shifting or moving on hover/active */
+.ant-btn:hover, .ant-btn:focus, .ant-btn:active {
+  transform: none !important;
+}
+
+/* Data Explorer: force no rounded corners on header/tab elements */
+.no-radius {
+  border-radius: 0 !important;
+}

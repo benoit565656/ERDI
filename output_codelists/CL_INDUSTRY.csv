@@ -1,0 +1,42 @@
+Code id,Name
+c1,"Agriculture, hunting, forestry, and fishing"
+c2,Mining and quarrying
+c3,"Food, beverages, and tobacco"
+c4,Textiles and textile products
+c5,"Leather, leather products, and footwear"
+c6,Wood and products of wood and cork
+c7,"Pulp, paper, paper products, printing, and publishing"
+c8,"Coke, refined petroleum, and nuclear fuel"
+c9,Chemicals and chemical products
+c10,Rubber and plastics
+c11,Other nonmetallic minerals
+c12,Basic metals and fabricated metal
+c13,"Machinery, nec"
+c14,Electrical and optical equipment
+c15,Transport equipment
+c16,"Manufacturing, nec; recycling"
+c17,"Electricity, gas, and water supply"
+c18,Construction
+c19,"Sale, maintenance, and repair of motor vehicles and motorcycles; retail sale of fuel"
+c20,"Wholesale trade and commission trade, except of motor vehicles and motorcycles"
+c21,"Retail trade, except of motor vehicles and motorcycles; repair of household goods"
+c22,Hotels and restaurants
+c23,Inland transport
+c24,Water transport
+c25,Air transport
+c26,Other supporting and auxiliary transport activities; activities of travel agencies
+c27,Post and telecommunications
+c28,Financial intermediation
+c29,Real estate activities
+c30,Renting of M&Eq and other business activities
+c31,Public administration and defense; compulsory social security
+c32,Education
+c33,Health and social work
+c34,"Other community, social, and personal services"
+c35,Private households with employed persons
+F1,Final consumption expenditure of households
+F2,Final consumption expenditure of nonprofit institutions serving households
+F3,Final consumption expenditure of government
+F4,Gross fixed capital formation
+F5,Changes in inventories and acquisitions less disposal of valuables
+_T,All industries

@@ -166,7 +166,7 @@ export default function ImportWizard({ importType, onCompleted }: ImportWizardPr
 
           {importing ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <Spin tip="Importing records into statistical observations table..." />
+              <Spin description="Importing records into statistical observations table..." />
             </div>
           ) : (
             <RowActionsToolbar

@@ -27,3 +27,50 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { code, name, economyType, iso2Code, iso3Code, currencyCode, parentCode } = body;
+
+    if (!code || !name || !economyType) {
+      return NextResponse.json({ error: 'Code, Name, and Economy Type are required.' }, { status: 400 });
+    }
+
+    const economy = await prisma.economy.upsert({
+      where: { code },
+      update: {
+        name,
+        economyType,
+        iso2Code: iso2Code || null,
+        iso3Code: iso3Code || null,
+        currencyCode: currencyCode || null,
+        parentCode: parentCode || null,
+      },
+      create: {
+        code,
+        name,
+        economyType,
+        iso2Code: iso2Code || null,
+        iso3Code: iso3Code || null,
+        currencyCode: currencyCode || null,
+        parentCode: parentCode || null,
+      },
+    });
+
+    // Write audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'UPSERT_ECONOMY',
+        entityType: 'Economy',
+        entityId: code,
+        newValues: { code, name, economyType, iso2Code, iso3Code, currencyCode, parentCode } as any,
+      },
+    });
+
+    return NextResponse.json(economy);
+  } catch (err: any) {
+    console.error('Economy API Error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

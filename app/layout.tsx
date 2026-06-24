@@ -5,9 +5,10 @@ import './global.css';
 export const metadata = {
   title: 'ERDI Platform Admin',
   description: 'Enterprise SDMX Administrative Platform',
+  icons: {
+    icon: '/images/favicon.png',
+  },
 };
-
-import AppLayout from '@/components/AppLayout';
 
 export default function RootLayout({
   children,
@@ -18,7 +19,7 @@ export default function RootLayout({
     <html lang="en" style={{ height: '100%' }}>
       <body style={{ margin: 0, padding: 0, height: '100%', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
         <Providers>
-          <AppLayout>{children}</AppLayout>
+          {children}
         </Providers>
       </body>
     </html>

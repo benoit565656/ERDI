@@ -1,0 +1,58 @@
+/* Custom CSS to force zero border-radius on data explorer elements */
+
+/* 1. Global flat style overrides for data explorer */
+.no-radius,
+.no-radius *,
+.explorer-tab-bar,
+.explorer-tab-bar *,
+.explorer-sticky-header,
+.explorer-sticky-header *,
+.controls-pill,
+.controls-pill * {
+  border-radius: 0px !important;
+}
+
+/* 2. Ant Design specific component overrides in the explorer */
+.ant-radio-button-wrapper,
+.ant-radio-button-wrapper-checked,
+.ant-radio-button-wrapper:first-child,
+.ant-radio-button-wrapper:last-child {
+  border-radius: 0px !important;
+}
+
+.ant-select,
+.ant-select-selector,
+.ant-select-single,
+.ant-select-dropdown,
+.ant-select-item {
+  border-radius: 0px !important;
+}
+
+.ant-btn,
+.ant-btn-circle,
+.ant-btn-round,
+.ant-btn-sm,
+.ant-btn-lg {
+  border-radius: 0px !important;
+}
+
+.ant-tag {
+  border-radius: 0px !important;
+}
+
+.ant-card,
+.ant-card-body,
+.ant-card-head {
+  border-radius: 0px !important;
+}
+
+.ant-table-wrapper,
+.ant-table,
+.ant-table-container,
+.ant-table-content,
+.ant-table-thead > tr > th,
+.ant-table-thead,
+.ant-table-tbody,
+.ant-table-sticky-holder {
+  border-radius: 0px !important;
+}

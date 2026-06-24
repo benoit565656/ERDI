@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { LifeCycleStatus } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { code, name, description } = body;
+    const { code, name, description, website, contactEmail, status } = body;
 
     if (!code || !name) {
       return NextResponse.json({ error: 'Code and Name are required.' }, { status: 400 });
@@ -23,8 +24,21 @@ export async function POST(req: Request) {
 
     const agency = await prisma.agency.upsert({
       where: { code },
-      update: { name, description },
-      create: { code, name, description },
+      update: { 
+        name, 
+        description, 
+        website, 
+        contactEmail, 
+        status: status as LifeCycleStatus 
+      },
+      create: { 
+        code, 
+        name, 
+        description, 
+        website, 
+        contactEmail, 
+        status: (status as LifeCycleStatus) || 'ACTIVE' 
+      },
     });
 
     // Write audit log
@@ -33,7 +47,7 @@ export async function POST(req: Request) {
         action: 'UPSERT_AGENCY',
         entityType: 'Agency',
         entityId: code,
-        newValues: { code, name, description } as any,
+        newValues: { code, name, description, website, contactEmail, status } as any,
       },
     });
 

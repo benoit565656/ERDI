@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { DataflowLevel } from '@prisma/client';
+import { LifeCycleStatus } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -8,9 +8,6 @@ export async function GET() {
       include: {
         dataset: true,
         parent: true,
-        _count: {
-          select: { dataflowIndicators: true },
-        },
       },
       orderBy: [
         { datasetCode: 'asc' },
@@ -18,7 +15,78 @@ export async function GET() {
         { code: 'asc' },
       ],
     });
-    return NextResponse.json(dataflows);
+
+    const indicators = await prisma.dataflowIndicator.findMany({
+      where: { isActive: true },
+    });
+
+    // Helper to recursively collect all unique indicator codes
+    const getRecursiveIndicators = (
+      code: string,
+      directMap: Map<string, Set<string>>,
+      childrenMap: Map<string, string[]>
+    ): Set<string> => {
+      const result = new Set<string>(directMap.get(code) || []);
+      const children = childrenMap.get(code) || [];
+      for (const child of children) {
+        const childSet = getRecursiveIndicators(child, directMap, childrenMap);
+        childSet.forEach(c => result.add(c));
+      }
+      return result;
+    };
+
+    // Group by datasetCode for tree boundaries
+    const dfByDataset = new Map<string, typeof dataflows>();
+    for (const df of dataflows) {
+      if (!dfByDataset.has(df.datasetCode)) {
+        dfByDataset.set(df.datasetCode, []);
+      }
+      dfByDataset.get(df.datasetCode)!.push(df);
+    }
+
+    const indByDataset = new Map<string, typeof indicators>();
+    for (const ind of indicators) {
+      if (!indByDataset.has(ind.datasetCode)) {
+        indByDataset.set(ind.datasetCode, []);
+      }
+      indByDataset.get(ind.datasetCode)!.push(ind);
+    }
+
+    const results = dataflows.map(df => {
+      const datasetCode = df.datasetCode;
+      const datasetDFs = dfByDataset.get(datasetCode) || [];
+      const datasetInds = indByDataset.get(datasetCode) || [];
+
+      // Build maps
+      const directMap = new Map<string, Set<string>>();
+      for (const ind of datasetInds) {
+        if (!directMap.has(ind.dataflowCode)) {
+          directMap.set(ind.dataflowCode, new Set());
+        }
+        directMap.get(ind.dataflowCode)!.add(ind.indicatorCode);
+      }
+
+      const childrenMap = new Map<string, string[]>();
+      for (const d of datasetDFs) {
+        if (d.parentCode) {
+          if (!childrenMap.has(d.parentCode)) {
+            childrenMap.set(d.parentCode, []);
+          }
+          childrenMap.get(d.parentCode)!.push(d.code);
+        }
+      }
+
+      const allIndicators = getRecursiveIndicators(df.code, directMap, childrenMap);
+
+      return {
+        ...df,
+        _count: {
+          dataflowIndicators: allIndicators.size
+        }
+      };
+    });
+
+    return NextResponse.json(results);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -36,6 +104,7 @@ export async function POST(req: Request) {
       parentCode,
       dsdCode,
       sortOrder,
+      status,
       indicators, // Array of indicator codes to map
     } = body;
 
@@ -54,20 +123,22 @@ export async function POST(req: Request) {
       update: {
         name,
         description,
-        dataflowLevel: dataflowLevel as DataflowLevel,
+        dataflowLevel: dataflowLevel ? parseInt(dataflowLevel, 10) : 1,
         parentCode: parentCode || null,
         dsdCode: dsdCode || null,
         sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
+        status: status as LifeCycleStatus,
       },
       create: {
         code,
         datasetCode,
         name,
         description,
-        dataflowLevel: dataflowLevel as DataflowLevel,
+        dataflowLevel: dataflowLevel ? parseInt(dataflowLevel, 10) : 1,
         parentCode: parentCode || null,
         dsdCode: dsdCode || null,
         sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
+        status: (status as LifeCycleStatus) || 'ACTIVE',
       },
     });
 

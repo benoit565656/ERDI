@@ -15,7 +15,7 @@ export const useUIStore = create<UIStore>((set) => {
       const saved = localStorage.getItem('erdi_admin_theme');
       if (saved === 'light' || saved === 'dark') return saved;
     }
-    return 'dark'; // Premium dark mode by default
+    return 'light'; // Light mode by default
   };
 
   return {

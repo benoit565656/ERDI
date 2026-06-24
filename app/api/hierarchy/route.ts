@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { DataflowLevel } from '@prisma/client';
 
 export async function GET() {
   try {
     const [agencies, datasets, dataflows] = await Promise.all([
       prisma.agency.findMany({ orderBy: { code: 'asc' } }),
       prisma.dataset.findMany({ orderBy: { code: 'asc' } }),
-      prisma.dataflow.findMany({ orderBy: { sortOrder: 'asc' } }),
+      prisma.dataflow.findMany({
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          dataflowIndicators: {
+            include: {
+              indicator: {
+                select: {
+                  code: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
     ]);
 
     return NextResponse.json({ agencies, datasets, dataflows });
@@ -68,11 +81,21 @@ export async function PUT(req: Request) {
           },
           data: {
             parentCode: null,
-            dataflowLevel: DataflowLevel.MAIN,
+            dataflowLevel: 1,
           },
         });
       } else if (targetParentType === 'dataflow') {
         // Nested under another dataflow (sub-category)
+        const parentDf = await prisma.dataflow.findUnique({
+          where: {
+            datasetCode_code: {
+              datasetCode,
+              code: targetParentCode,
+            },
+          },
+        });
+        const parentLevel = Number(parentDf?.dataflowLevel ?? 1);
+
         await prisma.dataflow.update({
           where: {
             datasetCode_code: {
@@ -82,7 +105,7 @@ export async function PUT(req: Request) {
           },
           data: {
             parentCode: targetParentCode,
-            dataflowLevel: DataflowLevel.SECONDARY,
+            dataflowLevel: parentLevel + 1,
           },
         });
       } else {

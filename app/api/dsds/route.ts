@@ -24,8 +24,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Code, Agency, Version, and Name are required.' }, { status: 400 });
     }
 
-    const dsd = await prisma.dsd.create({
-      data: {
+    const existing = await prisma.dsd.findUnique({ where: { code } });
+
+    const dsd = await prisma.dsd.upsert({
+      where: { code },
+      update: {
+        agency,
+        version,
+        name,
+        description,
+      },
+      create: {
         code,
         agency,
         version,
@@ -37,7 +46,7 @@ export async function POST(req: Request) {
     // Write audit log
     await prisma.auditLog.create({
       data: {
-        action: 'CREATE_DSD',
+        action: existing ? 'UPDATE_DSD' : 'CREATE_DSD',
         entityType: 'Dsd',
         entityId: code,
         newValues: dsd as any,

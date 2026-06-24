@@ -1,0 +1,45 @@
+Code id,Name
+ENERGY,Energy
+ENERGY_01,Main Activity Electricity and Heat Production
+ENERGY_02,Petroleum Refining - Manufacture of Solid Fuels and Other Energy Industries
+ENERGY_03,Manufacturing Industries and Construction
+ENERGY_04,Civil Aviation
+ENERGY_05,Road Transportation no resuspension
+ENERGY_06,Railways
+ENERGY_07,Water-borne Navigation
+ENERGY_08,Other Transportation
+ENERGY_09,Residential and other sectors
+ENERGY_10,Non-Specified
+ENERGY_11,Solid Fuels
+ENERGY_12,Oil and Natural Gas
+IPPU,Industrial Processes and Product Use (IPPU)
+IPPU_01,Cement production
+IPPU_02,Lime production
+IPPU_03,Glass Production
+IPPU_04,Other Process Uses of Carbonates
+IPPU_05,Chemical Industry
+IPPU_06,Metal Industry
+IPPU_07,Other Product Manufacture and Use
+IPPU_08,Product Uses as Substitutes for Ozone Depleting Substances
+IPPU_09,Electronics Industry
+IPPU_10,Non-Energy Products from Fuels and Solvent Use
+AFOLU,"Agriculture, Forestry and Other Land Use (AFOLU)"
+AFOLU_01,Liming
+AFOLU_02,Urea application
+AFOLU_03,Emissions from biomass burning
+AFOLU_04,Enteric Fermentation
+AFOLU_05,Manure Management
+AFOLU_06,Rice cultivations
+AFOLU_07,Direct N2O Emissions from managed soils
+AFOLU_08,Indirect N2O Emissions from managed soils
+AFOLU_09,Indirect N2O Emissions from manure management
+WASTE,Waste
+WASTE_01,Incineration and Open Burning of Waste
+WASTE_02,Solid Waste Disposal
+WASTE_03,Wastewater Treatment and Discharge
+WASTE_04,Biological Treatment of Solid Waste
+OTHER,Other
+OTHER_01,Fossil fuel fires
+OTHER_02,Indirect N2O emissions from the atmospheric deposition of nitrogen in NOx and NH3
+OTHER_03,Fossil fuel fires
+_T,All IPCC sectors

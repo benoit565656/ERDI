@@ -1,0 +1,22 @@
+Code id,Name,Definition,Dataflow Primary,Dataflow Secondary,Dataflow Tertiary,4th Dataflow
+NGDP_AGR_SHR,"Agriculture, share of GDP (% of GDP at current basic prices)","Agriculture, share of GDP (% of GDP at current basic prices)",EO,EO_NA,EO_NA_CURR,EO_NA_CURR_GDP_SOO
+NGDP_IND_SHR,"Industry, share of GDP (% of GDP at current basic prices)","Industry, share of GDP (% of GDP at current basic prices)",EO,EO_NA,EO_NA_CURR,EO_NA_CURR_GDP_SOO
+NGDP_SVC_SHR,"Services, share of GDP (% of GDP at current basic prices)","Services, share of GDP (% of GDP at current basic prices)",EO,EO_NA,EO_NA_CURR,EO_NA_CURR_GDP_SOO
+NGDPR_GR,Growth rate of GDP (annual change),Growth rate of GDP (annual change),EO,EO_NA,EO_NA_CONST,EO_NA_CONST_GOO
+NGDPR_AGR_GR,Growth rate of Agriculture (annual change),Growth rate of Agriculture (annual change),EO,EO_NA,EO_NA_CONST,EO_NA_CONST_GOO
+NGDPR_IND_GR,Growth rate of Industry (annual change),Growth rate of Industry (annual change),EO,EO_NA,EO_NA_CONST,EO_NA_CONST_GOO
+NGDPR_SVC_GR,Growth rate of Services (annual change),Growth rate of Services (annual change),EO,EO_NA,EO_NA_CONST,EO_NA_CONST_GOO
+NDGPR_PCAP_GR,Growth rate of GDP per capita,Growth rate of GDP per capita,EO,EO_NA,EO_NA_CONST,EO_NA_CONST_GOO
+FX_PA,"Exchange rate (LCU per US$), period average","Exchange rate (LCU per US$), period average",MFP,MFP_XR,,
+CPI_PC,Inflation,Inflation,MFP,MFP_PR,,
+BM_PC,Change in money supply (M2),Change in money supply (M2),MFP,MFP_MF,,
+GF_REV_PER_NGDP,"Total revenue, % of GDP","Total revenue, % of GDP",GG,GG_GF,,
+GF_EXP_PER_NGDP,"Total expenditure, % of GDP","Total expenditure, % of GDP",GG,GG_GF,,
+GF_BAL_PER_NGDP,"Fiscal balance, % of GDP","Fiscal balance, % of GDP",GG,GG_GF,,
+BOP_TB_GS,Trade Balance: Goods and services,Trade Balance: Goods and services,GLB,GLB_BP,,
+GIR_EOP,"Gross International Reserves (GIR), end of period","Gross International Reserves (GIR), end of period",GLB,GLB_IR,,
+BOP_CAB_PER_NGDP,"Current account balance, % of GDP","Current account balance, % of GDP",GLB,GLB_BP,,
+BOP_X_G_GR,Growth rate of merchandise exports,Growth rate of merchandise exports,GLB,GLB_BP,,
+BOP_M_G_GR,Growth rate of merchandise imports,Growth rate of merchandise imports,GLB,GLB_BP,,
+EXT_DEBT,External debt disbursed & outstanding,External debt disbursed & outstanding,GLB,GLB_EI,,
+EXT_DEBT_SVC_PER_X,"External Debt Service, % of exports of goods and services","External Debt Service, % of exports of goods and services",GLB,GLB_EI,,

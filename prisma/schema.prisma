@@ -1,6 +1,7 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -11,9 +12,10 @@ generator client {
 // ENUMS
 // ----------------------------------------------------
 
-enum DataflowLevel {
-  MAIN
-  SECONDARY
+enum LifeCycleStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
 }
 
 enum WorkflowStatus {
@@ -128,34 +130,37 @@ enum WeightType {
 // MODELS
 // ----------------------------------------------------
 
-
-
 model Dataset {
-  id           String    @id @default(uuid()) @db.Uuid
-  code         String    @unique @db.VarChar
-  name         String    @db.VarChar
-  description  String?   @db.Text
-  divisionCode String    @map("division_code") @db.VarChar
-  agencyCode   String    @default("ERDI") @map("agency_code") @db.VarChar
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  id               String    @id @default(uuid()) @db.Uuid
+  code             String    @unique @db.VarChar
+  name             String    @db.VarChar
+  description      String?   @db.Text
+  divisionCode     String    @map("division_code") @db.VarChar
+  agencyCode       String    @default("ADB") @map("agency_code") @db.VarChar
+  status           LifeCycleStatus @default(ACTIVE)
+  defaultFrequency String[]  @default([]) @map("default_frequency")
+  sortOrder        Int       @default(0) @map("sort_order")
+  dsdCode          String?   @map("dsd_code") @db.VarChar
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
 
-  agency                   Agency                    @relation(fields: [agencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  agency                   Agency                     @relation(fields: [agencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  dsd                      Dsd?                       @relation(fields: [dsdCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
   dataflows                Dataflow[]
   codeLists                CodeList[]
   indicatorDatasetMetadata IndicatorDatasetMetadata[]
   indicatorDataflowMapping IndicatorDataflowMapping[]
   datasetDimensions        DatasetDimension[]
   datasetAttributes        DatasetAttribute[]
-  dataflowConstraints      DataflowConstraint[]
+  constraints              Constraint[]
   observations             Observation[]
   harmonizationRules       HarmonizationRule[]
   pageConfigs              PageConfig[]
   regionalWeights          RegionalWeight[]
   importBatches            ImportBatch[]
   aggregationRules         AggregationRule[]
+  frontEndCategoryIndicators FrontEndCategoryIndicator[]
 
   @@map("datasets")
 }
@@ -168,11 +173,13 @@ model Dsd {
   name        String         @db.VarChar
   description String?        @db.Text
   urn         String?        @db.VarChar
+  status      LifeCycleStatus @default(ACTIVE)
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
   deletedAt   DateTime?      @map("deleted_at")
   components  DsdComponent[]
   dataflows   Dataflow[]
+  datasets    Dataset[]
 
   @@map("dsds")
 }
@@ -188,6 +195,7 @@ model DsdComponent {
   isRequired      Boolean          @default(false) @map("is_required")
   attachmentLevel AttachmentLevel? @map("attachment_level")
   textType        String?          @map("text_type") @db.VarChar
+  defaultValue    String?          @map("default_value") @db.VarChar
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
   deletedAt       DateTime?        @map("deleted_at")
@@ -208,6 +216,7 @@ model ConceptScheme {
   name        String    @db.VarChar
   description String?   @db.Text
   urn         String?   @db.VarChar
+  status      LifeCycleStatus @default(ACTIVE)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
@@ -224,6 +233,10 @@ model Concept {
   description                String?                     @db.Text
   codeListCode               String?                     @map("code_list_code") @db.VarChar
   conceptType                ConceptType?                @map("concept_type")
+  dataType                   String?                     @map("data_type") @db.VarChar
+  defaultRole                String?                     @map("default_role") @db.VarChar
+  isCoded                    Boolean                     @default(false) @map("is_coded")
+  status                     LifeCycleStatus             @default(ACTIVE)
   urn                        String?                     @db.VarChar
   createdAt                  DateTime                    @default(now()) @map("created_at")
   updatedAt                  DateTime                    @updatedAt @map("updated_at")
@@ -237,7 +250,7 @@ model Concept {
   dataflowAttributes         DataflowAttribute[]
   observationExtraDimensions ObservationExtraDimension[]
   observationAttributes      ObservationAttribute[]
-  dataflowConstraintItems    DataflowConstraintItem[]
+  constraintItems            ConstraintItem[]
 
   @@map("concepts")
 }
@@ -248,12 +261,12 @@ model Dataflow {
   datasetCode      String        @map("dataset_code") @db.VarChar
   name             String        @db.VarChar
   description      String?       @db.Text
-  dataflowLevel    DataflowLevel @map("dataflow_level")
+  dataflowLevel    Int           @default(1) @map("dataflow_level")
   mainDataflowCode String?       @map("main_dataflow_code") @db.VarChar
   parentCode       String?       @map("parent_code") @db.VarChar
   dsdCode          String?       @map("dsd_code") @db.VarChar
-  sortOrder        Int?          @map("sort_order")
-  isActive         Boolean       @default(true) @map("is_active")
+  sortOrder        Int           @default(0) @map("sort_order")
+  status           LifeCycleStatus @default(ACTIVE)
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
   deletedAt        DateTime?     @map("deleted_at")
@@ -263,37 +276,43 @@ model Dataflow {
   mainDataflow       Dataflow?  @relation("MainToSecondaryDataflow", fields: [datasetCode, mainDataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
   secondaryDataflows Dataflow[] @relation("MainToSecondaryDataflow")
 
-  parent             Dataflow?     @relation("DataflowParent", fields: [datasetCode, parentCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
-  children           Dataflow[]    @relation("DataflowParent")
+  parent   Dataflow?  @relation("DataflowParent", fields: [datasetCode, parentCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
+  children Dataflow[] @relation("DataflowParent")
 
   indicatorDataflowMappingMain IndicatorDataflowMapping[] @relation("MainDataflowMapping")
   indicatorDataflowMappingSec  IndicatorDataflowMapping[] @relation("SecondaryDataflowMapping")
   dataflowDimensions           DataflowDimension[]
   dataflowAttributes           DataflowAttribute[]
-  dataflowConstraints          DataflowConstraint[]
+  constraints                  Constraint[]
   observationsMain             Observation[]              @relation("MainDataflowObs")
   observationsSec              Observation[]              @relation("SecondaryDataflowObs")
   harmonizationRules           HarmonizationRule[]
   pageConfigDataflows          PageConfigDataflow[]
   dataflowIndicators           DataflowIndicator[]
+  frontEndCategoryIndicators   FrontEndCategoryIndicator[]
 
   @@unique([datasetCode, code])
   @@map("dataflows")
 }
 
 model CodeList {
-  id          String    @id @default(uuid()) @db.Uuid
-  code        String    @unique @db.VarChar
-  name        String    @db.VarChar
-  description String?   @db.Text
-  datasetCode String?   @map("dataset_code") @db.VarChar
-  isGlobal    Boolean   @default(true) @map("is_global")
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  id                 String    @id @default(uuid()) @db.Uuid
+  code               String    @unique @db.VarChar
+  name               String    @db.VarChar
+  description        String?   @db.Text
+  datasetCode        String?   @map("dataset_code") @db.VarChar
+  isGlobal           Boolean   @default(true) @map("is_global")
+  agencyCode         String    @default("ADB") @map("agency_code") @db.VarChar
+  relatedConceptCode String?   @map("related_concept_code") @db.VarChar
+  version            String?   @db.VarChar
+  isHierarchical     Boolean   @default(false) @map("is_hierarchical")
+  status             LifeCycleStatus @default(ACTIVE)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
 
   dataset Dataset? @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  agency  Agency   @relation(fields: [agencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
   codeListItems      CodeListItem[]
   concepts           Concept[]
@@ -302,6 +321,7 @@ model CodeList {
   datasetAttributes  DatasetAttribute[]
   dataflowDimensions DataflowDimension[]
   dataflowAttributes DataflowAttribute[]
+  frontEndCategoryIndicators FrontEndCategoryIndicator[]
 
   @@map("code_lists")
 }
@@ -313,7 +333,7 @@ model CodeListItem {
   itemName       String    @map("item_name") @db.VarChar
   description    String?   @db.Text
   parentItemCode String?   @map("parent_item_code") @db.VarChar
-  sortOrder      Int?      @map("sort_order")
+  sortOrder      Int       @default(0) @map("sort_order")
   isActive       Boolean   @default(true) @map("is_active")
   validFrom      String?   @map("valid_from") @db.VarChar
   validTo        String?   @map("valid_to") @db.VarChar
@@ -324,6 +344,7 @@ model CodeListItem {
   codeList   CodeList       @relation(fields: [codeListCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
   parentItem CodeListItem?  @relation("Hierarchy", fields: [codeListCode, parentItemCode], references: [codeListCode, itemCode], onDelete: Restrict, onUpdate: Cascade)
   childItems CodeListItem[] @relation("Hierarchy")
+  frontEndCategoryIndicators FrontEndCategoryIndicator[]
 
   @@unique([codeListCode, itemCode])
   @@map("code_list_items")
@@ -335,7 +356,16 @@ model Indicator {
   name        String    @db.VarChar
   description String?   @db.Text
   themeCode   String?   @map("theme_code") @db.VarChar
-  isActive    Boolean   @default(true) @map("is_active")
+  shortName   String?   @map("short_name") @db.VarChar
+  definition  String?   @db.Text
+  defaultUnitCode String? @map("default_unit_code") @db.VarChar
+  defaultUnitMultCode String? @map("default_unit_mult_code") @db.VarChar
+  defaultFreqCode String? @map("default_freq_code") @db.VarChar
+  source      String?   @db.Text
+  methodology String?   @db.Text
+  category    String?   @db.VarChar
+  sortOrder   Int       @default(0) @map("sort_order")
+  status      LifeCycleStatus @default(ACTIVE)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
@@ -350,27 +380,27 @@ model Indicator {
   indicatorFormulas        IndicatorFormula[]
   harmonizationRules       HarmonizationRule[]
   dataflowIndicators       DataflowIndicator[]
+  constraints              Constraint[]
 
   @@map("indicators")
 }
 
 model IndicatorDatasetMetadata {
-  id             String    @id @default(uuid()) @db.Uuid
-  datasetCode    String    @map("dataset_code") @db.VarChar
-  indicatorCode  String    @map("indicator_code") @db.VarChar
-  divisionCode   String?   @map("division_code") @db.VarChar
+  id            String  @id @default(uuid()) @db.Uuid
+  datasetCode   String  @map("dataset_code") @db.VarChar
+  indicatorCode String  @map("indicator_code") @db.VarChar
+  divisionCode  String? @map("division_code") @db.VarChar
 
-  name           String?   @db.VarChar
-  description    String?   @db.Text
-  sourceNotes    String?   @map("source_notes") @db.Text
-  methodology    String?   @db.Text
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
+  name        String?   @db.VarChar
+  description String?   @db.Text
+  sourceNotes String?   @map("source_notes") @db.Text
+  methodology String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
-  dataset    Dataset     @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  indicator  Indicator   @relation(fields: [indicatorCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-
+  dataset   Dataset   @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  indicator Indicator @relation(fields: [indicatorCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
   @@map("indicator_dataset_metadata")
 }
@@ -557,26 +587,37 @@ model IndicatorDataflowMapping {
 }
 
 model Observation {
-  id                       String         @id @default(uuid()) @db.Uuid
-  datasetCode              String         @map("dataset_code") @db.VarChar
-  mainDataflowCode         String         @map("main_dataflow_code") @db.VarChar
-  secondaryDataflowCode    String?        @map("secondary_dataflow_code") @db.VarChar
-  indicatorCode            String         @map("indicator_code") @db.VarChar
-  economyCode              String         @map("economy_code") @db.VarChar
-  period                   String         @db.VarChar
-  freqCode                 String         @map("freq_code") @db.VarChar
-  obsValue                 Decimal?       @map("obs_value") @db.Decimal(28, 10)
-  unitCode                 String?        @map("unit_code") @db.VarChar
-  unitMultCode             String?        @map("unit_mult_code") @db.VarChar
-  decimalsCode             String?        @map("decimals_code") @db.VarChar
-  obsStatusCode            String?        @map("obs_status_code") @db.VarChar
-  refYear                  String?        @map("ref_year") @db.VarChar
-  baseYear                 String?        @map("base_year") @db.VarChar
-  dataSource               String?        @map("data_source") @db.Text
-  methodology              String?        @db.Text
-  footnote                 String?        @db.Text
-  divisionCode             String?        @map("division_code") @db.VarChar
-  agencyCode               String         @default("ERDI") @map("agency_code") @db.VarChar
+  id                    String   @id @default(uuid()) @db.Uuid
+  datasetCode           String   @map("dataset_code") @db.VarChar
+  mainDataflowCode      String   @map("main_dataflow_code") @db.VarChar
+  secondaryDataflowCode String?  @map("secondary_dataflow_code") @db.VarChar
+  indicatorCode         String   @map("indicator_code") @db.VarChar
+  economyCode           String   @map("economy_code") @db.VarChar
+  period                String   @db.VarChar
+  freqCode              String   @map("freq_code") @db.VarChar
+  obsValue              Decimal? @map("obs_value") @db.Decimal(28, 10)
+  unitCode              String?  @map("unit_code") @db.VarChar
+  unitMultCode          String?  @map("unit_mult_code") @db.VarChar
+  decimalsCode          String?  @map("decimals_code") @db.VarChar
+  obsStatusCode         String?  @map("obs_status_code") @db.VarChar
+  refYear               String?  @map("ref_year") @db.VarChar
+  baseYear              String?  @map("base_year") @db.VarChar
+  dataSource            String?  @map("data_source") @db.Text
+  methodology           String?  @db.Text
+  footnote              String?  @db.Text
+  divisionCode          String?  @map("division_code") @db.VarChar
+  agencyCode            String   @default("ADB") @map("agency_code") @db.VarChar
+  sexCode               String?  @map("sex_code") @db.VarChar
+  ageCode               String?  @map("age_code") @db.VarChar
+  sectorCode            String?  @map("sector_code") @db.VarChar
+  occupationCode        String?  @map("occupation_code") @db.VarChar
+  regionCode            String?  @map("region_code") @db.VarChar
+  sizeClassCode         String?  @map("size_class_code") @db.VarChar
+  ownershipCode         String?  @map("ownership_code") @db.VarChar
+  currencyCode          String?  @map("currency_code") @db.VarChar
+  adjustmentCode        String?  @map("adjustment_code") @db.VarChar
+  priceBaseCode         String?  @map("price_base_code") @db.VarChar
+  counterpartAreaCode   String?  @map("counterpart_area_code") @db.VarChar
 
   workflowStatus           WorkflowStatus @default(DRAFT) @map("workflow_status")
   isPublished              Boolean        @default(false) @map("is_published")
@@ -594,18 +635,18 @@ model Observation {
   updatedAt                DateTime       @updatedAt @map("updated_at")
   deletedAt                DateTime?      @map("deleted_at")
 
-  dataset           Dataset           @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  indicator         Indicator         @relation(fields: [indicatorCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  economy           Economy           @relation(fields: [economyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  mainDataflow      Dataflow          @relation("MainDataflowObs", fields: [datasetCode, mainDataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
-  secondaryDataflow Dataflow?         @relation("SecondaryDataflowObs", fields: [datasetCode, secondaryDataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
-  importBatch       ImportBatch?      @relation(fields: [importBatchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  agency            Agency            @relation(fields: [agencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  dataset           Dataset      @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  indicator         Indicator    @relation(fields: [indicatorCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  economy           Economy      @relation(fields: [economyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  mainDataflow      Dataflow     @relation("MainDataflowObs", fields: [datasetCode, mainDataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
+  secondaryDataflow Dataflow?    @relation("SecondaryDataflowObs", fields: [datasetCode, secondaryDataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
+  importBatch       ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  agency            Agency       @relation(fields: [agencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
-  unit              CommonUnit?       @relation("ObsUnit", fields: [unitCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  harmonizedUnit    CommonUnit?       @relation("ObsHarmUnit", fields: [harmonizedUnitCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  multiplier        CommonMultiplier? @relation("ObsMult", fields: [unitMultCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  harmonizedMult    CommonMultiplier? @relation("ObsHarmMult", fields: [harmonizedMultiplierCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  unit           CommonUnit?       @relation("ObsUnit", fields: [unitCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  harmonizedUnit CommonUnit?       @relation("ObsHarmUnit", fields: [harmonizedUnitCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  multiplier     CommonMultiplier? @relation("ObsMult", fields: [unitMultCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  harmonizedMult CommonMultiplier? @relation("ObsHarmMult", fields: [harmonizedMultiplierCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
   extraDimensions    ObservationExtraDimension[]
   attributes         ObservationAttribute[]
@@ -622,6 +663,8 @@ model Observation {
   @@index([isPublished])
   @@index([deletedAt])
   @@index([agencyCode])
+  // Composite index for the public data explorer query pattern
+  @@index([isPublished, deletedAt, datasetCode, indicatorCode, economyCode, period])
   @@map("observations")
 }
 
@@ -699,50 +742,68 @@ model ImportBatch {
 }
 
 model ImportValidationMessage {
-  id            String   @id @default(uuid()) @db.Uuid
-  importBatchId String   @map("import_batch_id") @db.Uuid
-  rowNumber     Int      @map("row_number")
-  severity      Severity
-  fieldName     String?  @map("field_name") @db.VarChar
-  message       String   @db.Text
-  rawRow        Json?    @map("raw_row")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  importBatchId   String   @map("import_batch_id") @db.Uuid
+  rowNumber       Int?     @map("row_number")
+  severity        Severity
+  fieldName       String?  @map("field_name") @db.VarChar
+  message         String   @db.Text
+  rawRow          Json?    @map("raw_row")
+  observationHash String?  @map("observation_hash") @db.VarChar
+  createdAt       DateTime @default(now()) @map("created_at")
 
   importBatch ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("import_validation_messages")
 }
 
-model DataflowConstraint {
-  id             String    @id @default(uuid()) @db.Uuid
-  datasetCode    String    @map("dataset_code") @db.VarChar
-  dataflowCode   String    @map("dataflow_code") @db.VarChar
-  constraintName String    @map("constraint_name") @db.VarChar
-  description    String?   @db.Text
-  isActive       Boolean   @default(true) @map("is_active")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
-
-  dataset  Dataset  @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  dataflow Dataflow @relation(fields: [datasetCode, dataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
-
-  constraintItems DataflowConstraintItem[]
-
-  @@map("dataflow_constraints")
+enum ConstraintScopeType {
+  DATASET
+  DATAFLOW
+  INDICATOR
+  DATAFLOW_INDICATOR
 }
 
-model DataflowConstraintItem {
-  id               String   @id @default(uuid()) @db.Uuid
-  constraintId     String   @map("constraint_id") @db.Uuid
-  conceptCode      String   @map("concept_code") @db.VarChar
-  allowedCodeValue String   @map("allowed_code_value") @db.VarChar
-  createdAt        DateTime @default(now()) @map("created_at")
+enum ConstraintRuleType {
+  ALLOWED
+  FORBIDDEN
+  REQUIRED
+}
 
-  constraint DataflowConstraint @relation(fields: [constraintId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  concept    Concept            @relation(fields: [conceptCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+model Constraint {
+  id            String              @id @default(uuid()) @db.Uuid
+  scopeType     ConstraintScopeType @map("scope_type")
+  datasetCode   String              @map("dataset_code") @db.VarChar
+  dataflowCode  String?             @map("dataflow_code") @db.VarChar
+  indicatorCode String?             @map("indicator_code") @db.VarChar
+  name          String              @db.VarChar
+  description   String?             @db.Text
+  isActive      Boolean             @default(true) @map("is_active")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  deletedAt     DateTime?           @map("deleted_at")
 
-  @@map("dataflow_constraint_items")
+  dataset   Dataset    @relation(fields: [datasetCode], references: [code], onDelete: Cascade, onUpdate: Cascade)
+  dataflow  Dataflow?  @relation(fields: [datasetCode, dataflowCode], references: [datasetCode, code], onDelete: Cascade, onUpdate: Cascade)
+  indicator Indicator? @relation(fields: [indicatorCode], references: [code], onDelete: Cascade, onUpdate: Cascade)
+
+  constraintItems ConstraintItem[]
+
+  @@map("constraints")
+}
+
+model ConstraintItem {
+  id           String             @id @default(uuid()) @db.Uuid
+  constraintId String             @map("constraint_id") @db.Uuid
+  conceptCode  String             @map("concept_code") @db.VarChar
+  ruleType     ConstraintRuleType @map("rule_type")
+  codeValue    String?            @map("code_value") @db.VarChar
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  constraint Constraint @relation(fields: [constraintId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  concept    Concept    @relation(fields: [conceptCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("constraint_items")
 }
 
 model CommonUnit {
@@ -1056,26 +1117,34 @@ model RegionalWeight {
 }
 
 model Agency {
-  id          String    @id @default(uuid()) @db.Uuid
-  code        String    @unique @db.VarChar
-  name        String    @db.VarChar
-  description String?   @db.Text
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  id           String    @id @default(uuid()) @db.Uuid
+  code         String    @unique @db.VarChar
+  name         String    @db.VarChar
+  description  String?   @db.Text
+  website      String?   @db.VarChar
+  contactEmail String?   @map("contact_email") @db.VarChar
+  status       LifeCycleStatus @default(ACTIVE)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   datasets     Dataset[]
   observations Observation[]
+  codeLists    CodeList[]
+  frontEndCategoryIndicators FrontEndCategoryIndicator[]
 
   @@map("agencies")
 }
 
 model DataflowIndicator {
-  dataflowCode  String   @map("dataflow_code") @db.VarChar
-  datasetCode   String   @map("dataset_code") @db.VarChar
-  indicatorCode String   @map("indicator_code") @db.VarChar
-  sortOrder     Int      @default(0) @map("sort_order")
-  createdAt     DateTime @default(now()) @map("created_at")
+  dataflowCode        String   @map("dataflow_code") @db.VarChar
+  datasetCode         String   @map("dataset_code") @db.VarChar
+  indicatorCode       String   @map("indicator_code") @db.VarChar
+  sortOrder           Int      @default(0) @map("sort_order")
+  isMainDataflow      Boolean  @default(true) @map("is_main_dataflow")
+  isSecondaryDataflow Boolean  @default(false) @map("is_secondary_dataflow")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
 
   dataflow  Dataflow  @relation(fields: [datasetCode, dataflowCode], references: [datasetCode, code], onDelete: Cascade, onUpdate: Cascade)
   indicator Indicator @relation(fields: [indicatorCode], references: [code], onDelete: Cascade, onUpdate: Cascade)
@@ -1083,3 +1152,104 @@ model DataflowIndicator {
   @@id([datasetCode, dataflowCode, indicatorCode])
   @@map("dataflow_indicators")
 }
+
+model CategorySet {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique @db.VarChar
+  name        String   @db.VarChar
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  categories FrontEndCategory[]
+
+  @@map("front_end_category_sets")
+}
+
+model FrontEndCategory {
+  id              String    @id @default(uuid()) @db.Uuid
+  categorySetCode String    @map("category_set_code") @db.VarChar
+  code            String    @db.VarChar
+  name            String    @db.VarChar
+  description     String?   @db.Text
+  parentCode      String?   @map("parent_code") @db.VarChar
+  hierarchyPath   String    @map("hierarchy_path") @db.VarChar
+  depthLevel      Int       @default(1) @map("depth_level")
+  sortOrder       Int       @default(0) @map("sort_order")
+  slug            String    @db.VarChar
+  icon            String?   @db.VarChar
+  image           String?   @db.VarChar
+  isVisible       Boolean   @default(true) @map("is_visible")
+  metaTitle       String?   @map("meta_title") @db.VarChar
+  metaDescription String?   @map("meta_description") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  categorySet CategorySet          @relation(fields: [categorySetCode], references: [code], onDelete: Cascade)
+  parent      FrontEndCategory?    @relation("CategoryHierarchy", fields: [categorySetCode, parentCode], references: [categorySetCode, code], onDelete: Restrict, onUpdate: Cascade)
+  children    FrontEndCategory[]   @relation("CategoryHierarchy")
+  indicators  FrontEndCategoryIndicator[]
+
+  @@unique([categorySetCode, code])
+  @@unique([categorySetCode, hierarchyPath])
+  @@map("front_end_categories")
+}
+
+model FrontEndCategoryIndicator {
+  id                 String  @id @default(uuid()) @db.Uuid
+  categorySetCode    String  @map("category_set_code") @db.VarChar
+  categoryCode       String  @map("category_code") @db.VarChar
+  agencyCode         String  @map("agency_code") @db.VarChar
+  datasetCode        String  @map("dataset_code") @db.VarChar
+  sourceCodeListCode String  @map("source_code_list_code") @db.VarChar
+  indicatorCode      String  @map("indicator_code") @db.VarChar
+  dataflowCode       String? @map("dataflow_code") @db.VarChar
+  sortOrder          Int     @default(0) @map("sort_order")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  category           FrontEndCategory @relation(fields: [categorySetCode, categoryCode], references: [categorySetCode, code], onDelete: Cascade, onUpdate: Cascade)
+  agency             Agency           @relation(fields: [agencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  dataset            Dataset          @relation(fields: [datasetCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  codeList           CodeList         @relation(fields: [sourceCodeListCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  codeListItem       CodeListItem     @relation(fields: [sourceCodeListCode, indicatorCode], references: [codeListCode, itemCode], onDelete: Restrict, onUpdate: Cascade)
+  dataflow           Dataflow?        @relation(fields: [datasetCode, dataflowCode], references: [datasetCode, code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([categorySetCode, categoryCode, datasetCode, sourceCodeListCode, indicatorCode], map: "uq_fe_category_indicator_key")
+  @@unique([categorySetCode, categoryCode, sortOrder], map: "uq_fe_category_indicator_order")
+  @@map("front_end_category_indicators")
+}
+
+model ExplorerCache {
+  id            String   @id @default(uuid()) @db.Uuid
+  datasetCode   String   @map("dataset_code") @db.VarChar
+  indicatorCode String   @map("indicator_code") @db.VarChar
+  economyCode   String   @map("economy_code") @db.VarChar
+  freqCode      String   @map("freq_code") @db.VarChar
+  periods       String   @db.Text
+  latestPeriod  String   @map("latest_period") @db.VarChar
+  obsCount      Int      @map("obs_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([datasetCode, indicatorCode, economyCode, freqCode])
+  @@index([datasetCode])
+  @@index([indicatorCode])
+  @@index([economyCode])
+  @@map("explorer_cache")
+}
+
+model FallbackExchangeRate {
+  id          String   @id @default(uuid()) @db.Uuid
+  economyCode String   @map("economy_code") @db.VarChar
+  period      String   @db.VarChar
+  obsValue    Float    @map("obs_value")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([economyCode, period])
+  @@map("fallback_exchange_rates")
+}
+
+
+

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { LifeCycleStatus } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
           select: { dataflows: true },
         },
       },
-      orderBy: { code: 'asc' },
+      orderBy: { sortOrder: 'asc' },
     });
     return NextResponse.json(datasets);
   } catch (err: any) {
@@ -21,16 +22,39 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { code, name, description, divisionCode, agencyCode } = body;
+    const { code, name, description, divisionCode, agencyCode, status, defaultFrequency, sortOrder } = body;
 
     if (!code || !name || !divisionCode || !agencyCode) {
       return NextResponse.json({ error: 'Code, Name, Division, and Agency are required.' }, { status: 400 });
     }
 
+    const freqArray = Array.isArray(defaultFrequency)
+      ? defaultFrequency
+      : defaultFrequency
+        ? defaultFrequency.split(',').map((f: string) => f.trim())
+        : [];
+
     const dataset = await prisma.dataset.upsert({
       where: { code },
-      update: { name, description, divisionCode, agencyCode },
-      create: { code, name, description, divisionCode, agencyCode },
+      update: { 
+        name, 
+        description, 
+        divisionCode, 
+        agencyCode,
+        status: status as LifeCycleStatus,
+        defaultFrequency: freqArray,
+        sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
+      },
+      create: { 
+        code, 
+        name, 
+        description, 
+        divisionCode, 
+        agencyCode,
+        status: (status as LifeCycleStatus) || 'ACTIVE',
+        defaultFrequency: freqArray,
+        sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
+      },
     });
 
     // Write audit log
@@ -39,7 +63,7 @@ export async function POST(req: Request) {
         action: 'UPSERT_DATASET',
         entityType: 'Dataset',
         entityId: code,
-        newValues: { code, name, description, divisionCode, agencyCode } as any,
+        newValues: { code, name, description, divisionCode, agencyCode, status, defaultFrequency, sortOrder } as any,
       },
     });
 

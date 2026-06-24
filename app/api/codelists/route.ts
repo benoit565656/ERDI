@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { LifeCycleStatus } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -20,7 +21,20 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, codeListCode, code, name, description, parentItemCode, sortOrder } = body;
+    const { 
+      action, 
+      codeListCode, 
+      code, 
+      name, 
+      description, 
+      parentItemCode, 
+      sortOrder,
+      agencyCode,
+      relatedConceptCode,
+      version,
+      isHierarchical,
+      status
+    } = body;
 
     // Support two actions: create code list or create item
     if (action === 'CREATE_CODELIST') {
@@ -28,8 +42,29 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Code and Name are required.' }, { status: 400 });
       }
 
-      const list = await prisma.codeList.create({
-        data: { code, name, description, isGlobal: true },
+      const list = await prisma.codeList.upsert({
+        where: { code },
+        update: { 
+          name, 
+          description, 
+          isGlobal: true,
+          agencyCode: agencyCode || 'ERDI',
+          relatedConceptCode: relatedConceptCode || null,
+          version: version || null,
+          isHierarchical: !!isHierarchical,
+          status: status as LifeCycleStatus,
+        },
+        create: { 
+          code, 
+          name, 
+          description, 
+          isGlobal: true,
+          agencyCode: agencyCode || 'ERDI',
+          relatedConceptCode: relatedConceptCode || null,
+          version: version || null,
+          isHierarchical: !!isHierarchical,
+          status: (status as LifeCycleStatus) || 'ACTIVE',
+        },
       });
 
       // Audit Log

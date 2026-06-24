@@ -1,4 +1,4 @@
-import { PrismaClient, WorkflowStatus, ChangeType } from '@prisma/client';
+import { PrismaClient, WorkflowStatus, ChangeType, Severity } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -18,6 +18,21 @@ export class WorkflowService {
 
       if (obs.workflowStatus === WorkflowStatus.PUBLISHED) {
         throw new Error('Cannot approve an already published observation.');
+      }
+
+      // Check if there are active validation errors for this observation
+      if (obs.importBatchId) {
+        const hasErrors = await tx.importValidationMessage.findFirst({
+          where: {
+            importBatchId: obs.importBatchId,
+            observationHash: obs.observationHash,
+            severity: Severity.ERROR,
+          },
+        });
+
+        if (hasErrors) {
+          throw new Error(`Cannot approve observation (Hash: ${obs.observationHash}) because it has validation errors: ${hasErrors.message}`);
+        }
       }
 
       const updated = await tx.observation.update({
@@ -124,6 +139,21 @@ export class WorkflowService {
 
           if (obs.isPublished) {
             continue; // Already published
+          }
+
+          // Check if there are active validation errors for this observation
+          if (obs.importBatchId) {
+            const hasErrors = await tx.importValidationMessage.findFirst({
+              where: {
+                importBatchId: obs.importBatchId,
+                observationHash: obs.observationHash,
+                severity: Severity.ERROR,
+              },
+            });
+
+            if (hasErrors) {
+              throw new Error(`Cannot publish observation (Hash: ${obs.observationHash}) because it has validation errors: ${hasErrors.message}`);
+            }
           }
 
           // Update observation state

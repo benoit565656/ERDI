@@ -65,11 +65,6 @@ export default function FilterPanel({
           allowClear
           showSearch
           optionFilterProp="label"
-          onChange={(val) => {
-            if (field.onChange) {
-              field.onChange(val);
-            }
-          }}
         />
       );
     }
@@ -119,6 +114,26 @@ export default function FilterPanel({
           layout="vertical"
           onFinish={handleFinish}
           initialValues={initialValues}
+          onValuesChange={(changedValues) => {
+            Object.keys(changedValues).forEach((key) => {
+              const field = fields.find((f) => f.key === key);
+              if (field && field.onChange) {
+                field.onChange(changedValues[key] || '');
+              }
+              
+              // Reset dependent fields in form
+              if (key === 'datasetCode') {
+                form.setFieldsValue({
+                  mainDataflowCode: undefined,
+                  indicatorCode: undefined,
+                });
+              } else if (key === 'mainDataflowCode') {
+                form.setFieldsValue({
+                  indicatorCode: undefined,
+                });
+              }
+            });
+          }}
         >
           <Row gutter={[16, 8]}>
             {fields.map((field) => (

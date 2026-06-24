@@ -62,7 +62,7 @@ export default function FormDrawer<TFieldValues extends FieldValues>({
   return (
     <Drawer
       title={title}
-      width={width}
+      size={width}
       open={visible}
       onClose={onClose}
       destroyOnClose

@@ -1,4 +1,4 @@
-﻿Code id,Name,Description
+Code id,Name,Description
 MJ_PER_USD_2017_PPPG,(MJ/$ 2017 PPP GDP),
 MJ_PER_USD_2021_PPP_GDP,(MJ/$ 2021 PPP GDP),
 TH_SQ_KM,"1,000 square kilometers",
@@ -107,6 +107,7 @@ G_PER_HR,gallon per hour,
 DG,Gambian Dalasis,
 GEL,Georgian Lari,
 GC,Ghanaian Cedis,
+GG_CO2,"Gigagrams of carbon dioxide (CO2) equivalent",
 GIBL,Gibraltar Pound,
 GWh,Gigawatt hours,
 G,gram,

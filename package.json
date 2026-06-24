@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "dev:api": "ts-node api/server.ts"
+    "dev:api": "ts-node api/server.ts",
+    "start:api": "node dist/api/server.js"
   },
   "keywords": [],
   "dependencies": {
@@ -17,14 +18,19 @@
     "@prisma/client": "^6.19.3",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-table": "^8.21.3",
+    "@vnedyalk0v/react19-simple-maps": "^2.0.9",
     "antd": "^6.4.3",
+    "chart.js": "^4.5.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "lucide-react": "^1.17.0",
     "next": "^16.2.7",
     "papaparse": "^5.5.3",
     "react": "^19.2.7",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.77.0",
+    "recharts": "^3.8.1",
     "xml2js": "^0.6.2",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"

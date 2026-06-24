@@ -38,6 +38,18 @@ function generateObservationHash(obs: {
 async function main() {
   console.log('--- Starting Database Seeding ---');
 
+  // 0. Seed Agency
+  console.log('Seeding Agency...');
+  const agency = await prisma.agency.upsert({
+    where: { code: 'ADB' },
+    update: {},
+    create: {
+      code: 'ADB',
+      name: 'Asian Development Bank',
+      description: 'Asian Development Bank',
+    },
+  });
+
   // 1. Seed Dataset
   console.log('Seeding Dataset...');
   const dataset = await prisma.dataset.upsert({
@@ -47,6 +59,17 @@ async function main() {
       code: 'KIDB',
       name: 'Key Indicators Database',
       description: 'ADB Key Indicators Database',
+      divisionCode: 'ERDI',
+    },
+  });
+
+  const eemriotDataset = await prisma.dataset.upsert({
+    where: { code: 'EEMRIOT' },
+    update: {},
+    create: {
+      code: 'EEMRIOT',
+      name: 'Environmentally Extended Multi-Regional Input-Output Tables',
+      description: 'The Environmentally Extended Multi-Regional Input-Output Tables (EEMRIOT) dataset provides detailed economic and environmental linkages across industries and economies, enabling analysis of carbon emissions, energy use, resource consumption, and environmental footprints throughout global value chains and international trade.',
       divisionCode: 'ERDI',
     },
   });
@@ -198,7 +221,7 @@ async function main() {
   // Pass 1: Insert all dataflows with mainDataflowCode as null
   for (const row of dataflowsData) {
     if (row.DATAFLOW_CODE) {
-      const dataflowLevel = row.DATAFLOW_LEVEL_TYPE === 'SECONDARY' ? 'SECONDARY' : 'MAIN';
+      const dataflowLevel = row.DATAFLOW_LEVEL_TYPE === 'SECONDARY' ? 2 : 1;
 
       await prisma.dataflow.upsert({
         where: {
@@ -313,6 +336,10 @@ async function main() {
     { code: 'CL_KIDB_INDICATORS', name: 'Key Indicators Codelist', file: 'CL_KIDB_INDICATORS.csv' },
     { code: 'CL_KIDB_THEMES', name: 'Key Indicators Themes Codelist', file: 'CL_KIDB_THEMES.csv' },
     { code: 'CL_DIVISION', name: 'Division Codelist', file: 'CL_DIVISION.csv' },
+    { code: 'CL_EEMRIOT_INDICATORS', name: 'EEMRIOT Indicators Codelist', file: 'CL_EEMRIOT_INDICATORS.csv' },
+    { code: 'CL_GHG', name: 'Greenhouse Gas Codelist', file: 'CL_GHG.csv' },
+    { code: 'CL_INDUSTRY', name: 'Industry Codelist', file: 'CL_INDUSTRY.csv' },
+    { code: 'CL_SECTOR', name: 'Sector Codelist', file: 'CL_SECTOR.csv' },
   ];
 
   for (const cl of codeListsToSeed) {
@@ -387,7 +414,7 @@ async function main() {
     code: row['Code id'],
     name: row['Name'] || row['Code id'],
     description: row['Description'] || null,
-    isActive: true,
+    status: 'ACTIVE' as const,
   }));
 
   await prisma.indicator.createMany({
@@ -395,6 +422,22 @@ async function main() {
     skipDuplicates: true,
   });
   console.log(`Synced ${indicatorsToUpsert.length} shortcut Indicators.`);
+
+  const eemriotIndFilePath = path.join(__dirname, '../output_codelists/CL_EEMRIOT_INDICATORS.csv');
+  if (fs.existsSync(eemriotIndFilePath)) {
+    const eemriotIndItems = parseCsv<any>(eemriotIndFilePath);
+    const eemriotIndicatorsToUpsert = eemriotIndItems.map(row => ({
+      code: row['Code id'],
+      name: row['Name'] || row['Code id'],
+      description: row['Description'] || null,
+      status: 'ACTIVE' as const,
+    }));
+    await prisma.indicator.createMany({
+      data: eemriotIndicatorsToUpsert,
+      skipDuplicates: true,
+    });
+    console.log(`Synced ${eemriotIndicatorsToUpsert.length} EEMRIOT shortcut Indicators.`);
+  }
 
   // 10. Sync Economies from CL_ECONOMY_CODES
   console.log('Synchronizing Economies from Code List...');
@@ -515,9 +558,13 @@ async function main() {
       valueType: ValueType.REPORTED,
     };
 
-    await prisma.observation.create({
-      data: obsRecord,
-    });
+    try {
+      await prisma.observation.create({
+        data: obsRecord,
+      });
+    } catch (e) {
+      // Skip duplicate sample observations
+    }
   }
   console.log(`Successfully seeded ${obsData.length} observations.`);
 
@@ -587,6 +634,37 @@ async function main() {
     console.error('ERROR: Duplicate draft insert failed! It should be allowed.');
     console.error(error);
   }
+
+  // 15. Seed Front-End Category & Indicator for EEMRIOT
+  console.log('Seeding Front-End Category and Indicator for EEMRIOT...');
+  const categorySetCode = 'DATA_EXPLORER';
+  
+  // Seed FrontEndCategoryIndicator mapping directly under Greenhouse Gas Emissions category (ENV_GGE)
+  await prisma.frontEndCategoryIndicator.upsert({
+    where: {
+      categorySetCode_categoryCode_datasetCode_sourceCodeListCode_indicatorCode: {
+        categorySetCode,
+        categoryCode: 'ENV_GGE',
+        datasetCode: 'EEMRIOT',
+        sourceCodeListCode: 'CL_EEMRIOT_INDICATORS',
+        indicatorCode: 'EN_ATM_GHGT_KT_CE',
+      }
+    },
+    update: {
+      agencyCode: 'ADB',
+      sortOrder: 1,
+    },
+    create: {
+      categorySetCode,
+      categoryCode: 'ENV_GGE',
+      agencyCode: 'ADB',
+      datasetCode: 'EEMRIOT',
+      sourceCodeListCode: 'CL_EEMRIOT_INDICATORS',
+      indicatorCode: 'EN_ATM_GHGT_KT_CE',
+      sortOrder: 1,
+    }
+  });
+  console.log('Successfully seeded EEMRIOT category and indicator mapping under ENV_GGE.');
 
   console.log('--- Database Seeding Completed Successfully ---');
 }

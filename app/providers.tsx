@@ -23,10 +23,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Use a premium Dark theme by default during hydration to avoid flash
-  const algorithm = !mounted || themeMode === 'dark' 
-    ? theme.darkAlgorithm 
-    : theme.defaultAlgorithm;
+  // Always use Light theme at the root level to prevent background flashes on public pages.
+  // The admin layout (AppLayout) applies dark theme locally.
+  const algorithm = theme.defaultAlgorithm;
 
   const premiumTheme = {
     algorithm,
@@ -35,6 +34,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       colorInfo: '#3b82f6',     // Info Blue
       borderRadius: 8,          // Modern rounded corners
       fontFamily: 'system-ui, -apple-system, sans-serif',
+    },
+    components: {
+      Checkbox: {
+        borderRadiusSM: 4,
+      },
     },
   };
 
