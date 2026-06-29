@@ -22,8 +22,8 @@ export default function ApiDocsPage() {
   const [qbMode, setQbMode] = useState<'INDICATOR' | 'DATAFLOW'>('INDICATOR');
   const [qbDatasets, setQbDatasets] = useState<string>('ALL');
   const [qbDataflow, setQbDataflow] = useState<string>('EO');
-  const [qbIndicators, setQbIndicators] = useState<string>('LE_PE_NUM_C_PS,NY_GDP_PCAP_CD');
-  const [qbEconomies, setQbEconomies] = useState<string>('ARM,BGD,IND,PHL');
+  const [qbIndicators, setQbIndicators] = useState<string>('CPI_PC,BOP_CAB_PER_NGDP');
+  const [qbEconomies, setQbEconomies] = useState<string>('ARM,PHI,GEO');
   const [qbPeriods, setQbPeriods] = useState<string>('2020,2021,2022,2023,2024');
 
   // Test Runner State
@@ -212,7 +212,7 @@ export default function ApiDocsPage() {
                           2. Option 2: Query individual Indicator (Population) for specific years:
                         </div>
                         <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '6px', color: '#38bdf8', fontFamily: 'monospace', fontSize: '13px' }}>
-                          <span>GET {baseUrl}/api/public-explorer/data?indicator=LE_PE_NUM_C_PS&economy=ARM,BGD,IND&periods=2020,2021,2022,2023,2024</span>
+                          <span>GET {baseUrl}/api/public-explorer/data?indicator=CPI_PC&economy=ARM,PHI,GEO&periods=2020,2021,2022,2023,2024</span>
                         </div>
                       </div>
                     </div>

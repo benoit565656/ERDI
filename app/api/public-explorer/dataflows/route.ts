@@ -5,36 +5,48 @@ export const revalidate = 3600;
 
 export async function GET() {
   try {
-    // Fetch all categories under DATA_EXPLORER category set
-    const categories = await prisma.frontEndCategory.findMany({
-      where: {
-        categorySetCode: 'DATA_EXPLORER',
-        isVisible: true,
-      },
+    // Query all official dataflow definitions from the Dataflow table
+    const allDataflows = await prisma.dataflow.findMany({
       select: {
         code: true,
         name: true,
         description: true,
-        parentCode: true,
-        sortOrder: true,
+        datasetCode: true,
       },
-      orderBy: { sortOrder: 'asc' }
+      orderBy: { code: 'asc' }
     });
 
-    const rootCategories = categories.filter(c => !c.parentCode);
-    const dataflows = rootCategories.map(root => {
-      const children = categories.filter(c => c.parentCode === root.code);
-      return {
-        code: root.code,
-        name: root.name,
-        description: root.description || '',
-        subTopics: children.map(sub => ({
-          code: sub.code,
-          name: sub.name,
-          description: sub.description || ''
-        }))
-      };
+    // Identify main top-level dataflows (e.g., EO, PPL, MFP, GLB, GG, ENV, TC, SDG, ARIC, EGELC)
+    // and group sub-dataflows (e.g., PPL_LE, EO_PRIX) under their respective root parent
+    const dataflowsMap = new Map<string, any>();
+
+    allDataflows.forEach(df => {
+      const parts = df.code.split('_');
+      const rootCode = parts[0];
+
+      if (!dataflowsMap.has(rootCode)) {
+        // If exact root record exists, use its info; otherwise create placeholder
+        const rootRecord = allDataflows.find(d => d.code === rootCode) || df;
+        dataflowsMap.set(rootCode, {
+          code: rootCode,
+          name: rootRecord.code === rootCode ? rootRecord.name : rootCode,
+          description: rootRecord.description || '',
+          datasetCode: rootRecord.datasetCode,
+          subDataflows: []
+        });
+      }
+
+      if (df.code !== rootCode) {
+        dataflowsMap.get(rootCode).subDataflows.push({
+          code: df.code,
+          name: df.name,
+          description: df.description || '',
+          datasetCode: df.datasetCode
+        });
+      }
     });
+
+    const dataflows = Array.from(dataflowsMap.values());
 
     return NextResponse.json({ dataflows }, {
       headers: {
