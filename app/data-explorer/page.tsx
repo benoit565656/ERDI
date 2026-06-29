@@ -383,16 +383,26 @@ export default function DataExplorerPage() {
     return map;
   }, [economyData, allEconomies]);
 
-  // Fetch observations dynamically for the currently active indicator
+  // Fetch observations dynamically based on view mode (Indicator mode vs Economy mode)
+  const _showModeToggle = selectedIndicatorCodes.length > 1 && selectedEconomies.length > 1 && !isAricActive;
+  const currentEffectiveMode: 'indicator' | 'economy' = isAricActive 
+    ? 'indicator' 
+    : (_showModeToggle ? viewMode : (selectedIndicatorCodes.length > 1 ? 'economy' : 'indicator'));
+
   const targetIndicatorCode = activeIndicatorCode || selectedIndicatorCodes[0];
-  const isDataQueryEnabled = !!targetIndicatorCode && selectedEconomies.length > 0;
+  const targetEconomyCode = activeEconomyCode || selectedEconomies.find(e => e !== 'AFG') || selectedEconomies[0];
+
+  const isDataQueryEnabled = selectedIndicatorCodes.length > 0 && selectedEconomies.length > 0;
+
+  const queryIndicatorsStr = currentEffectiveMode === 'economy' ? selectedIndicatorCodes.join(',') : targetIndicatorCode;
+  const queryEconomiesStr  = currentEffectiveMode === 'economy' ? targetEconomyCode : selectedEconomies.join(',');
+
   const { data: obsResponse = DEFAULT_OBS_RESPONSE, isLoading: isObsLoading, isFetching: isObsFetching } = useQuery<{ data: any[], periods: string[] }>({
-    queryKey: ['explorerData', targetIndicatorCode, activeIndicatorDataset, selectedEconomies, selectedCounterparts],
+    queryKey: ['explorerData', currentEffectiveMode, queryIndicatorsStr, queryEconomiesStr, activeIndicatorDataset, selectedCounterparts],
     queryFn: () => {
-      const ecoStr = selectedEconomies.join(',');
       const countStr = selectedCounterparts ? selectedCounterparts.join(',') : '';
       const dsStr = activeIndicatorDataset || selectedDatasets.join(',');
-      return fetch(`/api/public-explorer/data?datasets=${dsStr}&indicators=${targetIndicatorCode}&economies=${ecoStr}&counterparts=${countStr}`)
+      return fetch(`/api/public-explorer/data?datasets=${dsStr}&indicators=${queryIndicatorsStr}&economies=${queryEconomiesStr}&counterparts=${countStr}`)
         .then(res => {
           if (!res.ok) throw new Error(`Failed to fetch observations: ${res.statusText}`);
           return res.json();

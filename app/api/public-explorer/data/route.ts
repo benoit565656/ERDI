@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { memoryCache } from '@/lib/cache';
 
 export async function GET(req: Request) {
   try {
@@ -51,8 +52,20 @@ export async function GET(req: Request) {
       }];
     }
 
-    // 3. Parallel: cache periods + all lookup tables at once
-    const [cacheRecords, indicatorNames, economyNames, unitNames, multiplierNames] = await Promise.all([
+    // 3. Fast O(1) lookup maps with memory cache
+    let unitNames = memoryCache.get<any[]>('commonUnits');
+    if (!unitNames) {
+      unitNames = await prisma.commonUnit.findMany({ select: { code: true, name: true } });
+      memoryCache.set('commonUnits', unitNames, 3600);
+    }
+
+    let multiplierNames = memoryCache.get<any[]>('commonMultipliers');
+    if (!multiplierNames) {
+      multiplierNames = await prisma.commonMultiplier.findMany({ select: { code: true, name: true, factor: true } });
+      memoryCache.set('commonMultipliers', multiplierNames, 3600);
+    }
+
+    const [cacheRecords, indicatorNames, economyNames] = await Promise.all([
       prisma.explorerCache.findMany({
         where: {
           datasetCode: { in: selectedDatasets },
@@ -69,8 +82,6 @@ export async function GET(req: Request) {
         where: { code: { in: selectedEconomies } },
         select: { code: true, name: true }
       }),
-      prisma.commonUnit.findMany({ select: { code: true, name: true } }),
-      prisma.commonMultiplier.findMany({ select: { code: true, name: true, factor: true } }),
     ]);
 
     // Build fast O(1) lookup maps
