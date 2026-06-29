@@ -383,22 +383,23 @@ export default function DataExplorerPage() {
     return map;
   }, [economyData, allEconomies]);
 
-  // Fetch observations dynamically
-  const isDataQueryEnabled = selectedIndicatorCodes.length > 0 && selectedEconomies.length > 0;
+  // Fetch observations dynamically for the currently active indicator
+  const targetIndicatorCode = activeIndicatorCode || selectedIndicatorCodes[0];
+  const isDataQueryEnabled = !!targetIndicatorCode && selectedEconomies.length > 0;
   const { data: obsResponse = DEFAULT_OBS_RESPONSE, isLoading: isObsLoading, isFetching: isObsFetching } = useQuery<{ data: any[], periods: string[] }>({
-    queryKey: ['explorerData', selectedDatasets, selectedIndicatorCodes, selectedEconomies],
+    queryKey: ['explorerData', targetIndicatorCode, activeIndicatorDataset, selectedEconomies, selectedCounterparts],
     queryFn: () => {
-      const indStr = selectedIndicatorCodes.join(',');
       const ecoStr = selectedEconomies.join(',');
-      // Fetch data for all periods. Toggling periods will be handled fast in memory on the client.
-      return fetch(`/api/public-explorer/data?datasets=${selectedDatasets.join(',')}&indicators=${indStr}&economies=${ecoStr}`)
+      const countStr = selectedCounterparts ? selectedCounterparts.join(',') : '';
+      const dsStr = activeIndicatorDataset || selectedDatasets.join(',');
+      return fetch(`/api/public-explorer/data?datasets=${dsStr}&indicators=${targetIndicatorCode}&economies=${ecoStr}&counterparts=${countStr}`)
         .then(res => {
           if (!res.ok) throw new Error(`Failed to fetch observations: ${res.statusText}`);
           return res.json();
         });
     },
     enabled: isDataQueryEnabled,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
   });
 
