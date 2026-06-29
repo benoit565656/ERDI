@@ -22,7 +22,7 @@ export default function ApiDocsPage() {
   const [qbMode, setQbMode] = useState<'INDICATOR' | 'DATAFLOW'>('INDICATOR');
   const [qbDatasets, setQbDatasets] = useState<string>('ALL');
   const [qbDataflow, setQbDataflow] = useState<string>('EO');
-  const [qbIndicators, setQbIndicators] = useState<string>('POP_TOTL,NGDP_R_CHG');
+  const [qbIndicators, setQbIndicators] = useState<string>('LE_PE_NUM_C_PS,NY_GDP_PCAP_CD');
   const [qbEconomies, setQbEconomies] = useState<string>('ARM,BGD,IND,PHL');
   const [qbPeriods, setQbPeriods] = useState<string>('2020,2021,2022,2023,2024');
 
@@ -212,7 +212,7 @@ export default function ApiDocsPage() {
                           2. Option 2: Query individual Indicator (Population) for specific years:
                         </div>
                         <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '6px', color: '#38bdf8', fontFamily: 'monospace', fontSize: '13px' }}>
-                          <span>GET {baseUrl}/api/public-explorer/data?indicator=POP_TOTL&economy=ARM,BGD,IND&periods=2020,2021,2022,2023,2024</span>
+                          <span>GET {baseUrl}/api/public-explorer/data?indicator=LE_PE_NUM_C_PS&economy=ARM,BGD,IND&periods=2020,2021,2022,2023,2024</span>
                         </div>
                       </div>
                     </div>
@@ -427,14 +427,14 @@ for obs in data['data'][:5]:
             </div>
           </div>
 
-          {/* LIVE TEST RUNNER CONSOLE (WITH FIXED MAX HEIGHT SCROLLER) */}
+          {/* LIVE TEST RUNNER CONSOLE (WITH FIXED SCROLLER INSIDE BLOCK) */}
           {testEndpoint && (
-            <div style={{ background: '#0f172a', borderRadius: '12px', padding: '24px', color: '#f8fafc', boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)' }}>
+            <div style={{ background: '#0f172a', borderRadius: '12px', padding: '24px', color: '#f8fafc', boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '100%', overflow: 'hidden' }}>
                   <ThunderboltOutlined style={{ color: '#38bdf8', fontSize: '18px' }} />
-                  <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>Live API Test Console</span>
-                  <code style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', color: '#38bdf8', fontSize: '13px' }}>{testEndpoint}</code>
+                  <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap' }}>Live API Test Console</span>
+                  <code style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', color: '#38bdf8', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{testEndpoint}</code>
                 </div>
                 {testStatus && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -451,7 +451,7 @@ for obs in data['data'][:5]:
                   <Spin description="Executing API request..." style={{ color: '#fff' }} />
                 </div>
               ) : testResponse ? (
-                <div style={{ position: 'relative', border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
                   <Button 
                     size="small" 
                     icon={copiedKey === 'test' ? <CheckOutlined style={{ color: '#4ade80' }} /> : <CopyOutlined />} 
@@ -460,7 +460,7 @@ for obs in data['data'][:5]:
                   >
                     Copy JSON
                   </Button>
-                  <pre style={{ background: '#020617', padding: '16px', borderRadius: '8px', maxHeight: '350px', overflowY: 'auto', fontSize: '13px', color: '#38bdf8', fontFamily: 'monospace', margin: 0 }}>
+                  <pre style={{ background: '#020617', padding: '16px', borderRadius: '8px', maxHeight: '300px', overflowX: 'auto', overflowY: 'auto', fontSize: '13px', color: '#38bdf8', fontFamily: 'monospace', margin: 0, maxWidth: '100%', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
                     {JSON.stringify(testResponse, null, 2)}
                   </pre>
                 </div>
