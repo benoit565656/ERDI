@@ -113,7 +113,9 @@ export async function GET(req: Request) {
       return a.title.localeCompare(b.title);
     });
 
-    return NextResponse.json(rootNodes);
+    const response = NextResponse.json(rootNodes);
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    return response;
   } catch (err: any) {
     console.error('Public Economies API Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

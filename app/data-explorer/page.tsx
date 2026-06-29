@@ -162,6 +162,8 @@ export default function DataExplorerPage() {
           if (!res.ok) throw new Error(`Failed to fetch tree: ${res.statusText}`);
           return res.json();
         }),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Flatten tree leaf keys to get the correct hierarchy order of all indicators
@@ -396,6 +398,8 @@ export default function DataExplorerPage() {
         });
     },
     enabled: isDataQueryEnabled,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
   });
 
   const isCurrencyIndicator = React.useMemo(() => {

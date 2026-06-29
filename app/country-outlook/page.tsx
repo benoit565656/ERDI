@@ -197,6 +197,8 @@ export default function CountryOutlookPage() {
   const { data: economiesTree = [], isLoading: isTreeLoading } = useQuery<any[]>({
     queryKey: ['activeEconomiesTree'],
     queryFn: () => fetch('/api/public-explorer/economies').then(res => res.json()),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Flatten nested region hierarchy tree into active countries list
@@ -291,7 +293,9 @@ export default function CountryOutlookPage() {
     queryFn: () => 
       fetch(`/api/public-explorer/data?economies=${selectedEconomy?.code}&indicators=${INDICATORS.join(',')}&periods=${PERIODS}`)
         .then(res => res.json()),
-    enabled: !!selectedEconomy
+    enabled: !!selectedEconomy,
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Group fetched observations by indicatorCode

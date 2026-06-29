@@ -195,7 +195,9 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ data: formattedData, periods: allAvailablePeriods });
+    const response = NextResponse.json({ data: formattedData, periods: allAvailablePeriods });
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1800');
+    return response;
   } catch (err: any) {
     console.error('Public Data API Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

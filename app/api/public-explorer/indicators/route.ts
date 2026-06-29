@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const revalidate = 3600;
+
 export async function GET() {
   try {
     // 1. Fetch active dataset-indicator-economy mappings from ExplorerCache table
@@ -160,7 +162,9 @@ export async function GET() {
       });
     });
 
-    return NextResponse.json(indicatorsList);
+    const response = NextResponse.json(indicatorsList);
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    return response;
   } catch (err: any) {
     console.error('API indicators error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

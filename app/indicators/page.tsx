@@ -93,6 +93,8 @@ export default function IndicatorsPage() {
       if (!res.ok) throw new Error(`Failed to fetch indicators: ${res.statusText}`);
       return res.json();
     }),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Fetch all economies name mapping
@@ -102,6 +104,8 @@ export default function IndicatorsPage() {
       if (!res.ok) throw new Error(`Failed to fetch economies: ${res.statusText}`);
       return res.json();
     }),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
   });
 
   const economyNameMap = useMemo(() => {
@@ -128,6 +132,8 @@ export default function IndicatorsPage() {
       if (!res.ok) throw new Error(`Failed to fetch category tree: ${res.statusText}`);
       return res.json();
     }),
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
   });
 
   // Filter categoryTree to only contain category nodes (no indicators)

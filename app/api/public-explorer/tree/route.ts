@@ -139,7 +139,9 @@ export async function GET(req: Request) {
 
     const cleanTree = rootNodes.filter(node => pruneEmptyBranches(node));
 
-    return NextResponse.json(cleanTree);
+    const response = NextResponse.json(cleanTree);
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    return response;
   } catch (err: any) {
     console.error('Public Tree API Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
