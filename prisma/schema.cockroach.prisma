@@ -653,8 +653,9 @@ model Observation {
   attributes         ObservationAttribute[]
   observationHistory ObservationHistory[]
 
-  // Composite index for the public data explorer query pattern
-  @@index([isPublished, deletedAt, datasetCode, indicatorCode, economyCode, period])
+  // Optimized composite indexes for public data explorer query patterns
+  @@index([datasetCode, indicatorCode, economyCode, period, isPublished])
+  @@index([datasetCode, economyCode, indicatorCode, period, isPublished])
   @@map("observations")
 }
 
