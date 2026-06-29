@@ -7,12 +7,12 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const datasetsParam = searchParams.get('datasets');
-    const indicatorsParam = searchParams.get('indicators');
-    const economiesParam = searchParams.get('economies');
-    const periodsParam = searchParams.get('periods');
+    const indicatorsParam = searchParams.get('indicators') || searchParams.get('indicator');
+    const economiesParam = searchParams.get('economies') || searchParams.get('economy');
+    const periodsParam = searchParams.get('periods') || searchParams.get('period');
 
     if (!indicatorsParam || !economiesParam) {
-      return NextResponse.json({ error: 'indicators and economies parameters are required.' }, { status: 400 });
+      return NextResponse.json({ error: 'indicator (or indicators) and economy (or economies) parameters are required.' }, { status: 400 });
     }
 
     const selectedIndicators = indicatorsParam.split(',').map(i => i.trim());

@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 export default function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const isFullWidthPage = pathname === '/data-explorer' || pathname === '/indicators' || pathname === '/country-outlook';
+  const isFullWidthPage = pathname === '/data-explorer' || pathname === '/indicators' || pathname === '/country-outlook' || pathname === '/api-docs' || pathname === '/api';
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -58,6 +58,12 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
                   <Link href="/country-outlook" className="link-navigation w-inline-block">
                     <img loading="lazy" src="/images/users-group.svg" alt="Country Outlook" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Country Outlook</div>
+                  </Link>
+                  <div className="separator-nav"></div>
+
+                  <Link href="/api-docs" className="link-navigation w-inline-block">
+                    <img loading="lazy" src="/images/chart-bar.svg" alt="API Documentation" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px', filter: 'hue-rotate(180deg)' }} />
+                    <div className="text-block">API Documentation</div>
                   </Link>
                   <div className="separator-nav"></div>
                   
