@@ -18,8 +18,8 @@ export async function GET(req: Request) {
       selectedDatasets = allDs.map(d => d.code);
     }
 
-    // 2. Fetch active dataset-indicator mappings directly from Observation table
-    const cacheRecords = await prisma.observation.findMany({
+    // 2. Fetch active dataset-indicator mappings directly from ExplorerCache table (ultra-fast 400ms query)
+    const cacheRecords = await prisma.explorerCache.findMany({
       where: {
         datasetCode: { in: selectedDatasets }
       },
