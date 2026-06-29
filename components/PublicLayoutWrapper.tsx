@@ -21,7 +21,7 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
       <div className="header" style={{ position: 'sticky', top: 0, zIndex: 1000, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
         <section className="section-header">
           <div data-animation="over-right" className="navbar w-nav" data-easing2="ease" data-easing="ease" data-collapse="medium" role="banner" data-no-scroll="1" data-duration="400" data-doc-height="1">
-            <div className="container w-container" style={isFullWidthPage ? { maxWidth: 'none', width: '100%', paddingLeft: '24px', paddingRight: '24px' } : {}}>
+            <div className="container w-container" style={isFullWidthPage ? { maxWidth: 'none', width: '100%', paddingLeft: '24px', paddingRight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } : { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               
               {/* Brand Logo */}
               <Link href="/index.html" className="brand w-nav-brand">
@@ -40,52 +40,52 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
               </div>
               
               {/* Navigation Menu */}
-              <nav role="navigation" className={`nav-menu w-nav-menu ${mobileMenuOpen ? 'w--open' : ''}`} style={mobileMenuOpen ? { display: 'block', transform: 'translateX(0px)', transition: 'transform 400ms ease 0s' } : {}}>
-                <div className="nav-links">
+              <nav role="navigation" className={`nav-menu w-nav-menu ${mobileMenuOpen ? 'w--open' : ''}`} style={mobileMenuOpen ? { display: 'block', transform: 'translateX(0px)', transition: 'transform 400ms ease 0s' } : { display: 'flex', alignItems: 'center' }}>
+                <div className="nav-links" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row', flexWrap: 'nowrap', gap: '8px' }}>
                   
-                  <Link href="/data-explorer" className="link-navigation w-inline-block">
+                  <Link href="/data-explorer" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/chart-bar.svg" alt="Data Explorer" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Data Explorer</div>
                   </Link>
                   <div className="separator-nav"></div>
 
-                  <Link href="/indicators" className="link-navigation w-inline-block">
+                  <Link href="/indicators" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/search.svg" alt="Indicators" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Indicators</div>
                   </Link>
                   <div className="separator-nav"></div>
 
-                  <Link href="/country-outlook" className="link-navigation w-inline-block">
+                  <Link href="/country-outlook" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/users-group.svg" alt="Country Outlook" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Country Outlook</div>
                   </Link>
                   <div className="separator-nav"></div>
 
-                  <Link href="/api-docs" className="link-navigation w-inline-block">
+                  <Link href="/api-docs" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/chart-bar.svg" alt="API Documentation" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px', filter: 'hue-rotate(180deg)' }} />
                     <div className="text-block">API Documentation</div>
                   </Link>
                   <div className="separator-nav"></div>
                   
-                  <a href="/knowledge-hub.html" className="link-navigation w-inline-block">
+                  <a href="/knowledge-hub.html" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/news.svg" alt="Knowledge Hub" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Knowledge Hub</div>
                   </a>
                   <div className="separator-nav"></div>
                   
-                  <a href="/events.html" className="link-navigation w-inline-block">
+                  <a href="/events.html" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/calendar-event.svg" alt="Events" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Events</div>
                   </a>
                   <div className="separator-nav"></div>
                   
-                  <a href="/our-people.html" className="link-navigation w-inline-block">
+                  <a href="/our-people.html" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/users-group.svg" alt="People" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">People</div>
                   </a>
                   <div className="separator-nav search2"></div>
                   
-                  <a href="https://d2yvooigui2x99.cloudfront.net/search-publications.html" className="link-navigation search2 w-inline-block">
+                  <a href="https://d2yvooigui2x99.cloudfront.net/search-publications.html" className="link-navigation search2 w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/search.svg" alt="Search" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Search</div>
                   </a>
