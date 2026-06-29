@@ -11,16 +11,17 @@ export async function GET(req: Request) {
     const indicatorsParam = searchParams.get('indicators') || searchParams.get('indicator');
     const economiesParam = searchParams.get('economies') || searchParams.get('economy');
     const periodsParam = searchParams.get('periods') || searchParams.get('period');
+    const startPeriod = searchParams.get('startPeriod') || searchParams.get('start');
+    const endPeriod = searchParams.get('endPeriod') || searchParams.get('end');
 
-    if ((!indicatorsParam && !dataflowsParam) || !economiesParam) {
-      return NextResponse.json({ error: 'Either indicator (or indicators) OR dataflow (or dataflows) parameter is required, along with economy (or economies).' }, { status: 400 });
-    }
-
+    // 1. Parse indicator codes (Support + or , and wildcard . / * / ALL)
     let selectedIndicators: string[] = [];
-    if (indicatorsParam) {
-      selectedIndicators = indicatorsParam.split(',').map(i => i.trim());
-    } else if (dataflowsParam) {
-      const dfs = dataflowsParam.split(',').map(d => d.trim());
+    let isAllIndicators = false;
+
+    if (indicatorsParam && indicatorsParam !== '.' && indicatorsParam !== '*' && indicatorsParam !== 'ALL') {
+      selectedIndicators = indicatorsParam.split('+').flatMap(i => i.split(',')).map(i => i.trim()).filter(Boolean);
+    } else if (dataflowsParam && dataflowsParam !== '.' && dataflowsParam !== '*' && dataflowsParam !== 'ALL') {
+      const dfs = dataflowsParam.split('+').flatMap(d => d.split(',')).map(d => d.trim()).filter(Boolean);
       const categoryMappings = await prisma.frontEndCategoryIndicator.findMany({
         where: {
           category: {
@@ -38,18 +39,29 @@ export async function GET(req: Request) {
         select: { indicatorCode: true }
       });
       selectedIndicators = Array.from(new Set(categoryMappings.map(m => m.indicatorCode)));
+    } else {
+      isAllIndicators = true;
     }
 
-    const selectedEconomies = economiesParam.split(',').map(e => e.trim());
+    // 2. Parse economy codes (Support + or , and wildcard . / * / ALL)
+    let selectedEconomies: string[] = [];
+    let isAllEconomies = false;
+
+    if (economiesParam && economiesParam !== '.' && economiesParam !== '*' && economiesParam !== 'ALL') {
+      selectedEconomies = economiesParam.split('+').flatMap(e => e.split(',')).map(e => e.trim()).filter(Boolean);
+    } else {
+      isAllEconomies = true;
+    }
+
     const counterpartParam = searchParams.get('counterparts');
     const selectedCounterparts = counterpartParam && counterpartParam !== ''
-      ? counterpartParam.split(',').map(c => c.trim())
+      ? counterpartParam.split('+').flatMap(c => c.split(',')).map(c => c.trim()).filter(Boolean)
       : [];
 
-    // 1. Resolve datasets
+    // 3. Resolve datasets
     let selectedDatasets: string[] = [];
     if (datasetsParam && datasetsParam !== 'ALL') {
-      selectedDatasets = datasetsParam.split(',').map(d => d.trim());
+      selectedDatasets = datasetsParam.split('+').flatMap(d => d.split(',')).map(d => d.trim());
     } else {
       const allDs = await prisma.dataset.findMany({
         where: { status: 'ACTIVE' },
@@ -58,25 +70,55 @@ export async function GET(req: Request) {
       selectedDatasets = allDs.map(d => d.code);
     }
 
-    // 2. Build where clause
+    // 4. Build base where clause
     const whereClause: any = {
       datasetCode: { in: selectedDatasets },
-      indicatorCode: { in: selectedIndicators },
-      economyCode: { in: selectedEconomies },
       isPublished: true,
       deletedAt: null,
     };
 
+    if (!isAllIndicators && selectedIndicators.length > 0) {
+      whereClause.indicatorCode = { in: selectedIndicators };
+    }
+
+    if (!isAllEconomies && selectedEconomies.length > 0) {
+      whereClause.economyCode = { in: selectedEconomies };
+    }
+
+    // If dataflow parameter was passed specifically, filter by main or secondary dataflow
+    if (dataflowsParam && dataflowsParam !== '.' && dataflowsParam !== '*' && dataflowsParam !== 'ALL') {
+      const dfs = dataflowsParam.split('+').flatMap(d => d.split(',')).map(d => d.trim());
+      whereClause.OR = [
+        { mainDataflowCode: { in: dfs } },
+        { secondaryDataflowCode: { in: dfs } },
+      ];
+    }
+
     if (selectedCounterparts.length > 0) {
-      whereClause.AND = [{
+      const cpCondition = {
         OR: [
           { datasetCode: { not: 'ARIC' } },
           { datasetCode: 'ARIC', counterpartAreaCode: { in: selectedCounterparts } }
         ]
-      }];
+      };
+      if (whereClause.AND) {
+        whereClause.AND.push(cpCondition);
+      } else {
+        whereClause.AND = [cpCondition];
+      }
     }
 
-    // 3. Fast O(1) lookup maps with memory cache
+    // Period filtering
+    if (startPeriod || endPeriod) {
+      whereClause.period = {};
+      if (startPeriod) whereClause.period.gte = startPeriod;
+      if (endPeriod) whereClause.period.lte = endPeriod;
+    } else if (periodsParam && periodsParam !== '' && periodsParam !== '.' && periodsParam !== '*' && periodsParam !== 'ALL') {
+      const pList = periodsParam.split('+').flatMap(p => p.split(',')).map(p => p.trim());
+      whereClause.period = { in: pList };
+    }
+
+    // 5. Fast O(1) lookup maps with memory cache
     let unitNames = memoryCache.get<any[]>('commonUnits');
     if (!unitNames) {
       unitNames = await prisma.commonUnit.findMany({ select: { code: true, name: true } });
@@ -89,58 +131,14 @@ export async function GET(req: Request) {
       memoryCache.set('commonMultipliers', multiplierNames, 3600);
     }
 
-    const [cacheRecords, indicatorNames, economyNames] = await Promise.all([
-      prisma.explorerCache.findMany({
-        where: {
-          datasetCode: { in: selectedDatasets },
-          indicatorCode: { in: selectedIndicators },
-          economyCode: { in: selectedEconomies },
-        },
-        select: { periods: true }
-      }),
-      prisma.indicator.findMany({
-        where: { code: { in: selectedIndicators } },
-        select: { code: true, name: true }
-      }),
-      prisma.economy.findMany({
-        where: { code: { in: selectedEconomies } },
-        select: { code: true, name: true }
-      }),
-    ]);
-
-    // Build fast O(1) lookup maps
-    const indicatorMap = new Map(indicatorNames.map(i => [i.code, i.name]));
-    const economyMap   = new Map(economyNames.map(e => [e.code, e.name]));
-    const unitMap      = new Map(unitNames.map(u => [u.code, u.name]));
-    const multMap      = new Map(multiplierNames.map(m => [m.code, { name: m.name, factor: m.factor }]));
-
-    // 4. Aggregate periods from cache
-    const allPeriods = new Set<string>();
-    cacheRecords.forEach(rec => {
-      if (rec.periods) rec.periods.split(',').forEach(p => allPeriods.add(p.trim()));
-    });
-    const allAvailablePeriods = Array.from(allPeriods).sort();
-
-    // 5. Determine selected periods
-    let selectedPeriods: string[] = [];
-    if (periodsParam && periodsParam !== '') {
-      selectedPeriods = periodsParam.split(',').map(p => p.trim());
-    } else {
-      selectedPeriods = allAvailablePeriods.slice(-15);
-    }
-
-    if (selectedPeriods.length === 0) {
-      return NextResponse.json({ data: [], periods: allAvailablePeriods });
-    }
-
-    whereClause.period = { in: selectedPeriods };
-
-    // 6. Fetch observations — use select (not include) to avoid expensive JOIN per row
+    // 6. Fetch observations
     const observations = await prisma.observation.findMany({
       where: whereClause,
       select: {
         id: true,
         datasetCode: true,
+        mainDataflowCode: true,
+        secondaryDataflowCode: true,
         indicatorCode: true,
         economyCode: true,
         counterpartAreaCode: true,
@@ -149,88 +147,97 @@ export async function GET(req: Request) {
         obsValue: true,
         unitCode: true,
         unitMultCode: true,
+        dataSource: true,
+        footnote: true,
       },
       orderBy: [
         { indicatorCode: 'asc' },
         { economyCode: 'asc' },
         { period: 'asc' }
-      ]
+      ],
+      take: 5000
     });
 
-    const hasExchangeRateIndicator = selectedIndicators.includes('ENDA_XDC_USD_RATE');
-    if (hasExchangeRateIndicator) {
-      const fallbackRates = await prisma.fallbackExchangeRate.findMany({
-        where: {
-          economyCode: { in: selectedEconomies },
-          period: { in: selectedPeriods }
-        }
-      });
+    // 7. Extract unique codes for fast metadata lookup maps
+    const uniqueIndicators = Array.from(new Set(observations.map(o => o.indicatorCode)));
+    const uniqueEconomies = Array.from(new Set(observations.map(o => o.economyCode)));
+    const uniquePeriods = Array.from(new Set(observations.map(o => o.period))).sort();
 
-      const existingCombinations = new Set(
-        observations
-          .filter(obs => obs.indicatorCode === 'ENDA_XDC_USD_RATE')
-          .map(obs => `${obs.economyCode}_${obs.period}`)
-      );
+    const [indicatorNames, economyNames] = await Promise.all([
+      prisma.indicator.findMany({ where: { code: { in: uniqueIndicators } }, select: { code: true, name: true } }),
+      prisma.economy.findMany({ where: { code: { in: uniqueEconomies } }, select: { code: true, name: true } }),
+    ]);
 
-      fallbackRates.forEach(rate => {
-        const comboKey = `${rate.economyCode}_${rate.period}`;
-        if (!existingCombinations.has(comboKey)) {
-          observations.push({
-            id: rate.id,
-            datasetCode: 'KIDB',
-            indicatorCode: 'ENDA_XDC_USD_RATE',
-            economyCode: rate.economyCode,
-            counterpartAreaCode: null,
-            period: rate.period,
-            freqCode: 'A',
-            obsValue: new Prisma.Decimal(rate.obsValue),
-            unitCode: 'NCU_PER_USD',
-            unitMultCode: '0',
-          });
-          existingCombinations.add(comboKey);
-        }
-      });
-    }
+    const indicatorMap = new Map(indicatorNames.map(i => [i.code, i.name]));
+    const economyMap   = new Map(economyNames.map(e => [e.code, e.name]));
+    const unitMap      = new Map(unitNames.map(u => [u.code, u.name]));
+    const multMap      = new Map(multiplierNames.map(m => [m.code, { name: m.name, factor: m.factor }]));
 
-    // 7. Fetch counterpart economy names (only if ARIC data present)
-    const counterpartCodes = Array.from(new Set(
-      observations.map(obs => obs.counterpartAreaCode).filter((c): c is string => !!c)
-    ));
-    let counterpartAreaMap = new Map<string, string>();
-    if (counterpartCodes.length > 0) {
-      const cpEconomies = await prisma.economy.findMany({
-        where: { code: { in: counterpartCodes } },
-        select: { code: true, name: true }
-      });
-      counterpartAreaMap = new Map(cpEconomies.map(e => [e.code, e.name]));
-    }
-
-    // 8. Map to flat format using in-memory lookup maps (no per-row DB calls)
+    // 8. Map to flat format
     const formattedData = observations.map(obs => {
       const mult = obs.unitMultCode ? multMap.get(obs.unitMultCode) : undefined;
       return {
         id: obs.id,
         datasetCode: obs.datasetCode,
+        dataflowCode: obs.secondaryDataflowCode || obs.mainDataflowCode || '',
         indicatorCode: obs.indicatorCode,
         indicatorName: indicatorMap.get(obs.indicatorCode) || obs.indicatorCode,
         economyCode: obs.economyCode,
         economyName: economyMap.get(obs.economyCode) || obs.economyCode,
         counterpartAreaCode: obs.counterpartAreaCode || '',
-        counterpartAreaName: obs.counterpartAreaCode
-          ? (counterpartAreaMap.get(obs.counterpartAreaCode) || obs.counterpartAreaCode)
-          : '',
         period: obs.period,
-        freqCode: obs.freqCode,
+        freqCode: obs.freqCode || 'A',
         obsValue: obs.obsValue !== null && obs.obsValue !== undefined ? Number(obs.obsValue) : null,
         unitCode: obs.unitCode || '',
         unitName: obs.unitCode ? (unitMap.get(obs.unitCode) || obs.unitCode) : '',
         multiplierCode: obs.unitMultCode || '',
         multiplierName: mult?.name || '',
         multiplierFactor: mult?.factor ? Number(mult.factor) : 1,
+        dataSource: obs.dataSource || '',
+        footnote: obs.footnote || ''
       };
     });
 
-    const response = NextResponse.json({ data: formattedData, periods: allAvailablePeriods });
+    // 9. Also build SDMX-style Series grouped list
+    const seriesMap = new Map<string, any>();
+    formattedData.forEach(obs => {
+      const seriesKey = `${obs.indicatorCode}__${obs.economyCode}__${obs.freqCode}`;
+      if (!seriesMap.has(seriesKey)) {
+        seriesMap.set(seriesKey, {
+          freq: obs.freqCode,
+          indicatorCode: obs.indicatorCode,
+          indicatorName: obs.indicatorName,
+          economyCode: obs.economyCode,
+          economyName: obs.economyName,
+          datasetCode: obs.datasetCode,
+          dataflowCode: obs.dataflowCode,
+          observations: []
+        });
+      }
+      seriesMap.get(seriesKey).observations.push({
+        period: obs.period,
+        obsValue: obs.obsValue,
+        unitCode: obs.unitCode,
+        unitName: obs.unitName,
+        multiplierCode: obs.multiplierCode,
+        multiplierName: obs.multiplierName,
+        dataSource: obs.dataSource,
+        footnote: obs.footnote
+      });
+    });
+
+    const seriesList = Array.from(seriesMap.values());
+
+    const response = NextResponse.json({
+      header: {
+        totalSeriesCount: seriesList.length,
+        totalObsCount: formattedData.length,
+        periods: uniquePeriods
+      },
+      data: formattedData,
+      series: seriesList,
+      periods: uniquePeriods
+    });
     response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1800');
     return response;
   } catch (err: any) {
