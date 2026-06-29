@@ -3,8 +3,12 @@ import { prisma } from '@/lib/prisma';
 
 export const revalidate = 3600;
 
-export async function GET() {
+export async function GET(req?: Request) {
   try {
+    const url = req ? new URL(req.url) : null;
+    const dataflowParam = url?.searchParams.get('dataflows') || url?.searchParams.get('dataflow');
+    const selectedDataflows = dataflowParam ? dataflowParam.split(',').map(d => d.trim()) : [];
+
     // 1. Fetch active dataset-indicator-economy mappings from ExplorerCache table
     const cacheRecords = await prisma.explorerCache.findMany({
       select: {
@@ -48,12 +52,23 @@ export async function GET() {
     });
 
     // 3. Fetch category indicator mappings
+    const categoryWhere: any = {
+      categorySetCode: 'DATA_EXPLORER',
+      isVisible: true,
+    };
+    if (selectedDataflows.length > 0) {
+      categoryWhere.OR = selectedDataflows.map(df => ({
+        OR: [
+          { code: df },
+          { parentCode: df },
+          { hierarchyPath: { contains: df } }
+        ]
+      }));
+    }
+
     const categoryIndicators = await prisma.frontEndCategoryIndicator.findMany({
       where: {
-        category: {
-          categorySetCode: 'DATA_EXPLORER',
-          isVisible: true,
-        }
+        category: categoryWhere
       },
       include: {
         category: {

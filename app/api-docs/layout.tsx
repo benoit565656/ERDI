@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import PublicLayoutWrapper from '@/components/PublicLayoutWrapper';
 
 export const metadata: Metadata = {
   title: 'API Documentation - ADB Economics & Research',
@@ -10,5 +11,5 @@ export default function ApiDocsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <PublicLayoutWrapper>{children}</PublicLayoutWrapper>;
 }

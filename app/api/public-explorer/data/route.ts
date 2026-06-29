@@ -7,15 +7,39 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const datasetsParam = searchParams.get('datasets');
+    const dataflowsParam = searchParams.get('dataflows') || searchParams.get('dataflow');
     const indicatorsParam = searchParams.get('indicators') || searchParams.get('indicator');
     const economiesParam = searchParams.get('economies') || searchParams.get('economy');
     const periodsParam = searchParams.get('periods') || searchParams.get('period');
 
-    if (!indicatorsParam || !economiesParam) {
-      return NextResponse.json({ error: 'indicator (or indicators) and economy (or economies) parameters are required.' }, { status: 400 });
+    if ((!indicatorsParam && !dataflowsParam) || !economiesParam) {
+      return NextResponse.json({ error: 'Either indicator (or indicators) OR dataflow (or dataflows) parameter is required, along with economy (or economies).' }, { status: 400 });
     }
 
-    const selectedIndicators = indicatorsParam.split(',').map(i => i.trim());
+    let selectedIndicators: string[] = [];
+    if (indicatorsParam) {
+      selectedIndicators = indicatorsParam.split(',').map(i => i.trim());
+    } else if (dataflowsParam) {
+      const dfs = dataflowsParam.split(',').map(d => d.trim());
+      const categoryMappings = await prisma.frontEndCategoryIndicator.findMany({
+        where: {
+          category: {
+            categorySetCode: 'DATA_EXPLORER',
+            isVisible: true,
+            OR: dfs.map(df => ({
+              OR: [
+                { code: df },
+                { parentCode: df },
+                { hierarchyPath: { contains: df } }
+              ]
+            }))
+          }
+        },
+        select: { indicatorCode: true }
+      });
+      selectedIndicators = Array.from(new Set(categoryMappings.map(m => m.indicatorCode)));
+    }
+
     const selectedEconomies = economiesParam.split(',').map(e => e.trim());
     const counterpartParam = searchParams.get('counterparts');
     const selectedCounterparts = counterpartParam && counterpartParam !== ''
