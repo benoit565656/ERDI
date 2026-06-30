@@ -424,6 +424,48 @@ for obs in data['data'][:5]:
                 </p>
               </div>
 
+              {/* ENDPOINT 4: SDMX DATA */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
+                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/data/ADB,PPL/A..</code>
+                  </div>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/sdmx/data/ADB,PPL/A..'); handleRunTest(); }}>
+                    Test Endpoint
+                  </Button>
+                </div>
+                <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Returns SDMX observations XML (or JSON format if passing <code>?format=json</code>) matching standard KIDB formats.
+                </p>
+              </div>
+
+              {/* ENDPOINT 5: SDMX STRUCTURE METADATA */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
+                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/structure/codelist/ADB/CL_ECONOMY/latest</code>
+                  </div>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/sdmx/structure/codelist/ADB/CL_ECONOMY/latest'); handleRunTest(); }}>
+                    Test Endpoint
+                  </Button>
+                </div>
+                <div style={{ marginTop: '12px', fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                  <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>SDMX queries consist of the following structure:</p>
+                  <code style={{ display: 'block', background: '#f1f5f9', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', color: '#0f172a', marginBottom: '8px', overflowX: 'auto' }}>
+                    /api/public-explorer/sdmx/structure/{"{structure_type}"}/{"{agency}"}/{"{structure_id}"}/{"{version}"}?[optionalParameters]
+                  </code>
+                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                    <li><strong>structure_type</strong>: <code>agencyscheme</code>, <code>codelist</code>, <code>conceptscheme</code>, <code>datastructure</code>, <code>dataflow</code></li>
+                    <li><strong>agency</strong>: Owning agency (e.g. <code>ADB</code>)</li>
+                    <li><strong>structure_id</strong>: ID in registry (e.g. <code>CL_ECONOMY</code>, <code>CL_INDICATOR</code>, <code>KIDB_DSD</code>, <code>all</code>)</li>
+                    <li><strong>version</strong>: <code>latest</code> or <code>+</code></li>
+                    <li><strong>optionalParameters</strong>: <code>format</code> (<code>sdmx-ml</code> (default XML) or <code>sdmx-json</code>)</li>
+                  </ul>
+                </div>
+              </div>
+
             </div>
           </div>
 
