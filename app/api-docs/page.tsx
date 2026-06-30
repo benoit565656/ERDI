@@ -453,9 +453,9 @@ print(f"Retrieved {len(data['data'])} observation points")
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
-                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/data/ADB,PPL/A.CPI_PC.ARM,PHI,GEO?startPeriod=2020&amp;endPeriod=2024</code>
+                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/data/ADB,PPL/A.LE_PE_AGR_XTE_RT_PS.ARM,PHI,GEO?startPeriod=2020&amp;endPeriod=2024</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/data/ADB,PPL/A.CPI_PC.ARM,PHI,GEO?startPeriod=2020&endPeriod=2024`)}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/data/ADB,PPL/A.LE_PE_AGR_XTE_RT_PS.ARM,PHI,GEO?startPeriod=2020&endPeriod=2024`)}>
                     Test Endpoint
                   </Button>
                 </div>
