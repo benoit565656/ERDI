@@ -77,7 +77,7 @@ export default function ApiDocsPage() {
   };
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '56px 24px 64px', color: '#1e293b' }}>
+    <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '110px 24px 64px', color: '#1e293b' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* HERO HEADER */}
