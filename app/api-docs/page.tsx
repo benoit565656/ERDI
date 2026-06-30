@@ -56,18 +56,27 @@ export default function ApiDocsPage() {
     return `${baseUrl}/api/public-explorer/data?${params.toString()}`;
   }, [qbMode, qbDatasets, qbDataflow, qbIndicators, qbEconomies, qbPeriods, baseUrl]);
 
-  const handleRunTest = async () => {
+  const handleRunTest = async (targetUrl?: string) => {
+    const url = targetUrl || testEndpoint;
+    setTestEndpoint(url.replace(baseUrl, ''));
     setTestLoading(true);
     setTestResponse(null);
     setTestStatus(null);
     const start = performance.now();
     try {
-      const res = await fetch(testEndpoint);
+      const res = await fetch(url);
       const duration = Math.round(performance.now() - start);
       setTestStatus(res.status);
       setTestTime(duration);
-      const data = await res.json();
-      setTestResponse(data);
+      
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('xml')) {
+        const text = await res.text();
+        setTestResponse({ __isXml: true, content: text });
+      } else {
+        const data = await res.json();
+        setTestResponse(data);
+      }
     } catch (err: any) {
       setTestStatus(500);
       setTestResponse({ error: err.message });
@@ -108,7 +117,7 @@ export default function ApiDocsPage() {
             <Tooltip title="Copy Base URL">
               <Button 
                 type="text" 
-                icon={copiedKey === 'base' ? <CheckOutlined style={{ color: '#4ade80' }} /> : <CopyOutlined style={{ color: '#fff' }} />} 
+                icon={copiedKey === 'base' ? <CheckOutlined style={{ color: '#4ade80' }} /> : <CopyOutlined />} 
                 onClick={() => copyToClipboard(`${baseUrl}/api/public-explorer`, 'base')}
                 style={{ color: '#fff' }}
               />
@@ -124,7 +133,7 @@ export default function ApiDocsPage() {
               Flexible Query Options (Dataflows or Individual Indicators)
             </h4>
             <p style={{ margin: 0, fontSize: '14px', color: '#0c4a6e', lineHeight: 1.5 }}>
-              You have 2 query modes: You can query an entire <strong>Dataflow</strong> (to fetch observation values for all indicators in that category, e.g., <code>?dataflow=EO</code>) OR you can query <strong>Individual Indicators</strong> (e.g., <code>?indicator=POP_TOTL</code>).
+              You have 2 query modes: You can query an entire <strong>Dataflow</strong> (to fetch observation values for all indicators in that category, e.g., <code>?dataflow=EO</code>) OR you can query <strong>Individual Indicators</strong> (e.g., <code>?indicator=CPI_PC</code>).
             </p>
           </div>
         </div>
@@ -158,7 +167,7 @@ export default function ApiDocsPage() {
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>indicator <span style={{ color: '#94a3b8', fontWeight: 400 }}>(or indicators)</span></td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
                     <td style={{ padding: '12px 14px' }}><span style={{ color: '#2563eb', fontWeight: 600 }}>Required (or dataflow)</span></td>
-                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated indicator code(s) (e.g. <code>POP_TOTL,NGDP_R_CHG</code>).</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated indicator code(s) (e.g. <code>CPI_PC,BOP_CAB_PER_NGDP</code>).</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>dataflow <span style={{ color: '#94a3b8', fontWeight: 400 }}>(or dataflows)</span></td>
@@ -170,7 +179,7 @@ export default function ApiDocsPage() {
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>economy <span style={{ color: '#94a3b8', fontWeight: 400 }}>(or economies)</span></td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
                     <td style={{ padding: '12px 14px' }}><span style={{ color: '#dc2626', fontWeight: 600 }}>Required</span></td>
-                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated 3-letter ISO economy code(s) (e.g. <code>ARM,BGD,IND,PHL</code>).</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated 3-letter ISO economy code(s) (e.g. <code>ARM,PHI,GEO</code>).</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>datasets</td>
@@ -220,23 +229,34 @@ export default function ApiDocsPage() {
                 },
                 {
                   key: '2',
-                  label: <span style={{ fontWeight: 700, color: '#1e293b' }}>File Format & Response JSON Example</span>,
+                  label: <span style={{ fontWeight: 700, color: '#1e293b' }}>Response Format Example</span>,
                   children: (
                     <pre style={{ background: '#0f172a', color: '#f8fafc', padding: '16px', borderRadius: '6px', fontSize: '13px', overflowX: 'auto', margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
 {`{
+  "header": {
+    "totalSeriesCount": 1,
+    "totalObsCount": 1
+  },
   "data": [
     {
       "id": "obs-101",
       "datasetCode": "KIDB",
-      "indicatorCode": "POP_TOTL",
+      "indicatorCode": "CPI_PC",
       "economyCode": "ARM",
       "period": "2024",
-      "obsValue": 2973.8,
-      "unitName": "Thousand",
-      "multiplierName": "Thousands"
+      "obsValue": 3.2
     }
   ],
-  "periods": ["2020", "2021", "2022", "2023", "2024"]
+  "series": [
+    {
+      "freq": "A",
+      "indicatorCode": "CPI_PC",
+      "economyCode": "ARM",
+      "observations": [
+        { "period": "2024", "obsValue": 3.2 }
+      ]
+    }
+  ]
 }`}
                     </pre>
                   )
@@ -254,8 +274,8 @@ export default function ApiDocsPage() {
 
 url = "${baseUrl}/api/public-explorer/data"
 params = {
-    "indicator": "POP_TOTL,NGDP_R_CHG",
-    "economy": "ARM,BGD,IND,PHL",
+    "indicator": "CPI_PC",
+    "economy": "ARM,PHI,GEO",
     "periods": "2020,2021,2022,2023,2024"
 }
 
@@ -263,8 +283,6 @@ response = requests.get(url, params=params)
 data = response.json()
 
 print(f"Retrieved {len(data['data'])} observation points")
-for obs in data['data'][:5]:
-    print(f"{obs['economyCode']} | {obs['indicatorCode']} ({obs['period']}): {obs['obsValue']} {obs['unitName']}")
 `}
                       </pre>
                     </div>
@@ -308,13 +326,13 @@ for obs in data['data'][:5]:
                         ) : (
                           <div>
                             <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Indicator Code(s)</label>
-                            <Input value={qbIndicators} onChange={e => setQbIndicators(e.target.value)} placeholder="e.g. POP_TOTL" />
+                            <Input value={qbIndicators} onChange={e => setQbIndicators(e.target.value)} placeholder="e.g. CPI_PC" />
                           </div>
                         )}
 
                         <div>
                           <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Economy Code(s)</label>
-                          <Input value={qbEconomies} onChange={e => setQbEconomies(e.target.value)} placeholder="e.g. ARM,BGD" />
+                          <Input value={qbEconomies} onChange={e => setQbEconomies(e.target.value)} placeholder="e.g. ARM,PHI,GEO" />
                         </div>
 
                         <div>
@@ -333,11 +351,7 @@ for obs in data['data'][:5]:
                       <Button 
                         type="primary" 
                         icon={<PlayCircleOutlined />} 
-                        onClick={() => {
-                          const relUrl = queryBuilderUrl.replace(baseUrl, '');
-                          setTestEndpoint(relUrl);
-                          handleRunTest();
-                        }}
+                        onClick={() => handleRunTest(queryBuilderUrl)}
                         style={{ background: '#155dfc', fontWeight: 600 }}
                       >
                         Execute Request Live
@@ -355,7 +369,7 @@ for obs in data['data'][:5]:
               Structural Metadata Endpoints
             </h2>
             <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>
-              Retrieve dataflows lists, codelists, indicators catalogs, region hierarchies, and definitions.
+              Retrieve dataflows lists, codelists, indicators catalogs, region hierarchies, mappings, and definitions.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -367,7 +381,7 @@ for obs in data['data'][:5]:
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
                     <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/dataflows</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/dataflows'); handleRunTest(); }}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/dataflows`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -383,7 +397,7 @@ for obs in data['data'][:5]:
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
                     <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/indicators?dataflow=EO</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/indicators?dataflow=EO'); handleRunTest(); }}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/indicators?dataflow=EO`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -392,14 +406,30 @@ for obs in data['data'][:5]:
                 </p>
               </div>
 
-              {/* ENDPOINT 2: ECONOMIES */}
+              {/* ENDPOINT 2: INDICATORS MAPPING */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
+                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/indicators/mapping</code>
+                  </div>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/indicators/mapping`)}>
+                    Test Endpoint
+                  </Button>
+                </div>
+                <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Returns all indicators alongside where they belong in terms of dataflows/topics.
+                </p>
+              </div>
+
+              {/* ENDPOINT 3: ECONOMIES */}
               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
                     <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/economies</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/economies'); handleRunTest(); }}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/economies`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -408,14 +438,14 @@ for obs in data['data'][:5]:
                 </p>
               </div>
 
-              {/* ENDPOINT 3: TREE */}
+              {/* ENDPOINT 4: TREE */}
               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
                     <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/tree</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/tree'); handleRunTest(); }}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/tree`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -424,14 +454,14 @@ for obs in data['data'][:5]:
                 </p>
               </div>
 
-              {/* ENDPOINT 4: SDMX DATA */}
+              {/* ENDPOINT 5: SDMX DATA */}
               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
                     <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/data/ADB,PPL/A..</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/sdmx/data/ADB,PPL/A..'); handleRunTest(); }}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/data/ADB,PPL/A..`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -440,14 +470,14 @@ for obs in data['data'][:5]:
                 </p>
               </div>
 
-              {/* ENDPOINT 5: SDMX STRUCTURE METADATA */}
+              {/* ENDPOINT 6: SDMX STRUCTURE METADATA */}
               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
                     <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/structure/codelist/ADB/CL_ECONOMY/latest</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => { setTestEndpoint('/api/public-explorer/sdmx/structure/codelist/ADB/CL_ECONOMY/latest'); handleRunTest(); }}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/structure/codelist/ADB/CL_ECONOMY/latest`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -497,13 +527,13 @@ for obs in data['data'][:5]:
                   <Button 
                     size="small" 
                     icon={copiedKey === 'test' ? <CheckOutlined style={{ color: '#4ade80' }} /> : <CopyOutlined />} 
-                    onClick={() => copyToClipboard(JSON.stringify(testResponse, null, 2), 'test')}
+                    onClick={() => copyToClipboard(testResponse.__isXml ? testResponse.content : JSON.stringify(testResponse, null, 2), 'test')}
                     style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10, background: '#1e293b', color: '#fff', border: '1px solid #334155' }}
                   >
-                    Copy JSON
+                    Copy {testResponse.__isXml ? 'XML' : 'JSON'}
                   </Button>
-                  <pre style={{ background: '#020617', padding: '16px', borderRadius: '8px', maxHeight: '300px', overflowX: 'auto', overflowY: 'auto', fontSize: '13px', color: '#38bdf8', fontFamily: 'monospace', margin: 0, maxWidth: '100%', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(testResponse, null, 2)}
+                  <pre style={{ background: '#020617', padding: '16px', borderRadius: '8px', maxHeight: '300px', overflowX: 'auto', overflowY: 'auto', fontSize: '13px', color: testResponse.__isXml ? '#a7f3d0' : '#38bdf8', fontFamily: 'monospace', margin: 0, maxWidth: '100%', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
+                    {testResponse.__isXml ? testResponse.content : JSON.stringify(testResponse, null, 2)}
                   </pre>
                 </div>
               ) : (
