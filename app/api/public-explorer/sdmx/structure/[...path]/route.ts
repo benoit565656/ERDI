@@ -20,11 +20,28 @@ export async function GET(
 
     // 1. Fetch metadata according to structure type
     if (structureType === 'codelist') {
-      const isEconomy = structureId.toUpperCase().includes('ECONOMY') || structureId === 'all';
-      const isIndicator = structureId.toUpperCase().includes('INDICATOR') || structureId === 'all';
+      const idUpper = structureId.toUpperCase();
+      const isAll = structureId === 'all';
+      
+      const isEconomy = idUpper.includes('ECONOMY') || isAll;
+      const isIndicator = idUpper.includes('INDICATOR') || isAll;
+      const isUnit = idUpper.includes('UNIT') && !idUpper.includes('MULT') || isAll;
+      const isUnitMult = idUpper.includes('MULT') || idUpper.includes('MULTIPLIER') || isAll;
+      const isObsStatus = idUpper.includes('STATUS') || isAll;
 
       let economiesList: any[] = [];
       let indicatorsList: any[] = [];
+      let unitsList: any[] = [];
+      let multipliersList: any[] = [];
+      
+      const obsStatusesList = [
+        { code: 'A', name: 'Normal value' },
+        { code: 'E', name: 'Estimated value' },
+        { code: 'F', name: 'Forecast value' },
+        { code: 'N', name: 'Not significant' },
+        { code: 'O', name: 'Missing value' },
+        { code: 'P', name: 'Provisional value' }
+      ];
 
       if (isEconomy) {
         economiesList = await prisma.economy.findMany({
@@ -41,12 +58,29 @@ export async function GET(
         });
       }
 
+      if (isUnit) {
+        unitsList = await prisma.commonUnit.findMany({
+          select: { code: true, name: true },
+          orderBy: { code: 'asc' }
+        });
+      }
+
+      if (isUnitMult) {
+        multipliersList = await prisma.commonMultiplier.findMany({
+          select: { code: true, name: true, factor: true },
+          orderBy: { code: 'asc' }
+        });
+      }
+
       if (format === 'json' || format === 'sdmx-json') {
         return NextResponse.json({
           header: { id: `STR_${Date.now()}`, prepared: timestamp, sender: agency },
           codelists: [
             ...(isEconomy ? [{ id: 'CL_ECONOMY', name: 'Economy Codelist', agency, codes: economiesList }] : []),
-            ...(isIndicator ? [{ id: 'CL_INDICATOR', name: 'Indicator Codelist', agency, codes: indicatorsList }] : [])
+            ...(isIndicator ? [{ id: 'CL_INDICATOR', name: 'Indicator Codelist', agency, codes: indicatorsList }] : []),
+            ...(isUnit ? [{ id: 'CL_UNIT', name: 'Unit Codelist', agency, codes: unitsList }] : []),
+            ...(isUnitMult ? [{ id: 'CL_UNIT_MULT', name: 'Multiplier Codelist', agency, codes: multipliersList }] : []),
+            ...(isObsStatus ? [{ id: 'CL_OBS_STATUS', name: 'Observation Status Codelist', agency, codes: obsStatusesList }] : [])
           ]
         });
       }
@@ -96,13 +130,59 @@ export async function GET(
       </structure:Codelist>`;
       }
 
+      if (isUnit) {
+        xml += `
+      <structure:Codelist id="CL_UNIT" agencyID="${agency}" version="1.0" isFinal="true">
+        <common:Name xml:lang="en">Unit Codelist</common:Name>`;
+        unitsList.forEach(u => {
+          const cleanName = u.name ? u.name.replace(/&/g, '&amp;') : u.code;
+          xml += `
+        <structure:Code id="${u.code}">
+          <common:Name xml:lang="en">${cleanName}</common:Name>
+        </structure:Code>`;
+        });
+        xml += `
+      </structure:Codelist>`;
+      }
+
+      if (isUnitMult) {
+        xml += `
+      <structure:Codelist id="CL_UNIT_MULT" agencyID="${agency}" version="1.0" isFinal="true">
+        <common:Name xml:lang="en">Unit Multiplier Codelist</common:Name>`;
+        multipliersList.forEach(m => {
+          xml += `
+        <structure:Code id="${m.code}">
+          <common:Name xml:lang="en">${m.name.replace(/&/g, '&amp;')} (Factor: ${m.factor})</common:Name>
+        </structure:Code>`;
+        });
+        xml += `
+      </structure:Codelist>`;
+      }
+
+      if (isObsStatus) {
+        xml += `
+      <structure:Codelist id="CL_OBS_STATUS" agencyID="${agency}" version="1.0" isFinal="true">
+        <common:Name xml:lang="en">Observation Status Codelist</common:Name>`;
+        obsStatusesList.forEach(s => {
+          xml += `
+        <structure:Code id="${s.code}">
+          <common:Name xml:lang="en">${s.name}</common:Name>
+        </structure:Code>`;
+        });
+        xml += `
+      </structure:Codelist>`;
+      }
+
       xml += `
     </structure:Codelists>
   </message:Structures>
 </message:Structure>`;
 
       return new Response(xml, {
-        headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Access-Control-Allow-Origin': '*' }
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Access-Control-Allow-Origin': '*'
+        }
       });
     }
 

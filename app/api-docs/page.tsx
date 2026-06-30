@@ -23,7 +23,8 @@ export default function ApiDocsPage() {
   const [qbDataflow, setQbDataflow] = useState<string>('EO');
   const [qbIndicators, setQbIndicators] = useState<string>('CPI_PC,BOP_CAB_PER_NGDP');
   const [qbEconomies, setQbEconomies] = useState<string>('ARM,PHI,GEO');
-  const [qbPeriods, setQbPeriods] = useState<string>('2020,2021,2022,2023,2024');
+  const [qbStartPeriod, setQbStartPeriod] = useState<string>('2020');
+  const [qbEndPeriod, setQbEndPeriod] = useState<string>('2024');
 
   // Test Runner State
   const [testEndpoint, setTestEndpoint] = useState<string>('/api/public-explorer/indicators');
@@ -50,9 +51,10 @@ export default function ApiDocsPage() {
     }
     
     if (qbEconomies) params.set('economy', qbEconomies);
-    if (qbPeriods) params.set('periods', qbPeriods);
+    if (qbStartPeriod) params.set('startPeriod', qbStartPeriod);
+    if (qbEndPeriod) params.set('endPeriod', qbEndPeriod);
     return `${baseUrl}/api/public-explorer/data?${params.toString()}`;
-  }, [qbMode, qbDataflow, qbIndicators, qbEconomies, qbPeriods, baseUrl]);
+  }, [qbMode, qbDataflow, qbIndicators, qbEconomies, qbStartPeriod, qbEndPeriod, baseUrl]);
 
   const handleRunTest = async (targetUrl?: string) => {
     const url = targetUrl || testEndpoint;
@@ -186,10 +188,16 @@ export default function ApiDocsPage() {
                     <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated 3-letter ISO economy code(s) (e.g. <code>ARM,PHI,GEO</code>). Support <code>+</code> or <code>,</code> separators. Use <code>.</code> for wildcard.</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>periods</td>
+                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>startPeriod</td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>Optional</td>
-                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated period years (e.g. <code>2020,2021,2022</code>). Defaults to last 15 available years.</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Starting period year filter (e.g. <code>2020</code>).</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>endPeriod</td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>Optional</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Ending period year filter (e.g. <code>2024</code>).</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>format</td>
@@ -222,10 +230,10 @@ export default function ApiDocsPage() {
 
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                          2. Option 2: Query individual Indicator (Population) for specific years:
+                          2. Option 2: Query individual Indicator (CPI) for specific start and end years:
                         </div>
                         <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '6px', color: '#38bdf8', fontFamily: 'monospace', fontSize: '13px' }}>
-                          <span>GET {baseUrl}/api/public-explorer/data?indicator=CPI_PC&economy=ARM,PHI,GEO&periods=2020,2021,2022,2023,2024</span>
+                          <span>GET {baseUrl}/api/public-explorer/data?indicator=CPI_PC&economy=ARM,PHI,GEO&startPeriod=2020&endPeriod=2024</span>
                         </div>
                       </div>
                     </div>
@@ -265,7 +273,8 @@ url = "${baseUrl}/api/public-explorer/data"
 params = {
     "indicator": "CPI_PC",
     "economy": "ARM,PHI,GEO",
-    "periods": "2020,2021,2022,2023,2024",
+    "startPeriod": "2020",
+    "endPeriod": "2024",
     "format": "json"
 }
 
@@ -316,8 +325,13 @@ print(f"Retrieved {len(data['data'])} observation points")
                         </div>
 
                         <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Periods (Years)</label>
-                          <Input value={qbPeriods} onChange={e => setQbPeriods(e.target.value)} placeholder="e.g. 2020,2021,2022" />
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Start Period (Year)</label>
+                          <Input value={qbStartPeriod} onChange={e => setQbStartPeriod(e.target.value)} placeholder="e.g. 2020" />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>End Period (Year)</label>
+                          <Input value={qbEndPeriod} onChange={e => setQbEndPeriod(e.target.value)} placeholder="e.g. 2024" />
                         </div>
                       </div>
 
@@ -439,9 +453,9 @@ print(f"Retrieved {len(data['data'])} observation points")
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
-                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/data/ADB,PPL/A..</code>
+                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/data/ADB,PPL/A.CPI_PC.ARM,PHI,GEO?startPeriod=2020&amp;endPeriod=2024</code>
                   </div>
-                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/data/ADB,PPL/A..`)}>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/data/ADB,PPL/A.CPI_PC.ARM,PHI,GEO?startPeriod=2020&endPeriod=2024`)}>
                     Test Endpoint
                   </Button>
                 </div>
@@ -450,7 +464,23 @@ print(f"Retrieved {len(data['data'])} observation points")
                 </p>
               </div>
 
-              {/* ENDPOINT 6: SDMX STRUCTURE METADATA */}
+              {/* ENDPOINT 6: SDMX CODELISTS (NEW) */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>GET</span>
+                    <code style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>/api/public-explorer/sdmx/structure/codelist/ADB/CL_UNIT/latest</code>
+                  </div>
+                  <Button size="small" icon={<PlayCircleOutlined />} onClick={() => handleRunTest(`${baseUrl}/api/public-explorer/sdmx/structure/codelist/ADB/CL_UNIT/latest`)}>
+                    Test Endpoint
+                  </Button>
+                </div>
+                <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Extract Codelist names and codes (e.g. units <code>CL_UNIT</code>, multipliers <code>CL_UNIT_MULT</code>, or status <code>CL_OBS_STATUS</code>) to decode observation attribute values.
+                </p>
+              </div>
+
+              {/* ENDPOINT 7: SDMX STRUCTURE METADATA */}
               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px 20px', background: '#fafafa' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -469,7 +499,7 @@ print(f"Retrieved {len(data['data'])} observation points")
                   <ul style={{ paddingLeft: '20px', margin: 0 }}>
                     <li><strong>structure_type</strong>: <code>agencyscheme</code>, <code>codelist</code>, <code>conceptscheme</code>, <code>datastructure</code>, <code>dataflow</code></li>
                     <li><strong>agency</strong>: Owning agency (e.g. <code>ADB</code>)</li>
-                    <li><strong>structure_id</strong>: ID in registry (e.g. <code>CL_ECONOMY</code>, <code>CL_INDICATOR</code>, <code>KIDB_DSD</code>, <code>all</code>)</li>
+                    <li><strong>structure_id</strong>: ID in registry (e.g. <code>CL_ECONOMY</code>, <code>CL_INDICATOR</code>, <code>CL_UNIT</code>, <code>CL_UNIT_MULT</code>, <code>CL_OBS_STATUS</code>, <code>all</code>)</li>
                     <li><strong>version</strong>: <code>latest</code> or <code>+</code></li>
                     <li><strong>optionalParameters</strong>: <code>format</code> (<code>sdmx-ml</code> (default XML) or <code>sdmx-json</code>)</li>
                   </ul>
