@@ -17,6 +17,34 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#fff', fontFamily: 'Inter, sans-serif' }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:300;400;500;600;700&family=Montserrat:300;400;500;600;700&family=Poppins:300;400;500;600;700&family=Raleway:300;400;500;600;700&display=swap" />
       
+      <style>{`
+        @media screen and (min-width: 768px) {
+          .nav-menu.w-nav-menu {
+            display: flex !important;
+            position: static !important;
+            background: transparent !important;
+            float: none !important;
+          }
+          .nav-links {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            position: static !important;
+            width: auto !important;
+            height: auto !important;
+            background: transparent !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+          }
+          .link-navigation {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            white-space: nowrap !important;
+          }
+        }
+      `}</style>
+      
       {/* HEADER SECTION - EXACT EXTRACTED WEBFLOW MARKUP WITH ABSOLUTE RESOURCE PATHS */}
       <div className="header" style={{ position: 'sticky', top: 0, zIndex: 1000, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
         <section className="section-header">
@@ -82,12 +110,6 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
                   <a href="/our-people.html" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/users-group.svg" alt="People" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">People</div>
-                  </a>
-                  <div className="separator-nav search2"></div>
-                  
-                  <a href="https://d2yvooigui2x99.cloudfront.net/search-publications.html" className="link-navigation search2 w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <img loading="lazy" src="/images/search.svg" alt="Search" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
-                    <div className="text-block">Search</div>
                   </a>
                   
                 </div>
