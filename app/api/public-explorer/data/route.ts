@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 import { memoryCache } from '@/lib/cache';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const datasetsParam = searchParams.get('datasets');
     const dataflowsParam = searchParams.get('dataflows') || searchParams.get('dataflow');
     const indicatorsParam = searchParams.get('indicators') || searchParams.get('indicator');
     const economiesParam = searchParams.get('economies') || searchParams.get('economy');
     const periodsParam = searchParams.get('periods') || searchParams.get('period');
     const startPeriod = searchParams.get('startPeriod') || searchParams.get('start');
     const endPeriod = searchParams.get('endPeriod') || searchParams.get('end');
+    const format = searchParams.get('format') || 'sdmx-ml'; // XML by default
 
     // 1. Parse indicator codes (Support + or , and wildcard . / * / ALL)
     let selectedIndicators: string[] = [];
@@ -58,21 +57,8 @@ export async function GET(req: Request) {
       ? counterpartParam.split('+').flatMap(c => c.split(',')).map(c => c.trim()).filter(Boolean)
       : [];
 
-    // 3. Resolve datasets
-    let selectedDatasets: string[] = [];
-    if (datasetsParam && datasetsParam !== 'ALL') {
-      selectedDatasets = datasetsParam.split('+').flatMap(d => d.split(',')).map(d => d.trim());
-    } else {
-      const allDs = await prisma.dataset.findMany({
-        where: { status: 'ACTIVE' },
-        select: { code: true }
-      });
-      selectedDatasets = allDs.map(d => d.code);
-    }
-
-    // 4. Build base where clause
+    // 3. Build base where clause (Datasets parameter is removed completely)
     const whereClause: any = {
-      datasetCode: { in: selectedDatasets },
       isPublished: true,
       deletedAt: null,
     };
@@ -118,7 +104,7 @@ export async function GET(req: Request) {
       whereClause.period = { in: pList };
     }
 
-    // 5. Fast O(1) lookup maps with memory cache
+    // 4. Fast O(1) lookup maps with memory cache
     let unitNames = memoryCache.get<any[]>('commonUnits');
     if (!unitNames) {
       unitNames = await prisma.commonUnit.findMany({ select: { code: true, name: true } });
@@ -131,7 +117,7 @@ export async function GET(req: Request) {
       memoryCache.set('commonMultipliers', multiplierNames, 3600);
     }
 
-    // 6. Fetch observations
+    // 5. Fetch observations
     const observations = await prisma.observation.findMany({
       where: whereClause,
       select: {
@@ -149,6 +135,10 @@ export async function GET(req: Request) {
         unitMultCode: true,
         dataSource: true,
         footnote: true,
+        decimalsCode: true,
+        obsStatusCode: true,
+        refYear: true,
+        baseYear: true
       },
       orderBy: [
         { indicatorCode: 'asc' },
@@ -158,7 +148,7 @@ export async function GET(req: Request) {
       take: 5000
     });
 
-    // 7. Extract unique codes for fast metadata lookup maps
+    // 6. Extract unique codes for fast metadata lookup maps
     const uniqueIndicators = Array.from(new Set(observations.map(o => o.indicatorCode)));
     const uniqueEconomies = Array.from(new Set(observations.map(o => o.economyCode)));
     const uniquePeriods = Array.from(new Set(observations.map(o => o.period))).sort();
@@ -173,75 +163,135 @@ export async function GET(req: Request) {
     const unitMap      = new Map(unitNames.map(u => [u.code, u.name]));
     const multMap      = new Map(multiplierNames.map(m => [m.code, { name: m.name, factor: m.factor }]));
 
-    // 8. Map to flat format
-    const formattedData = observations.map(obs => {
-      const mult = obs.unitMultCode ? multMap.get(obs.unitMultCode) : undefined;
-      return {
-        id: obs.id,
-        datasetCode: obs.datasetCode,
-        dataflowCode: obs.secondaryDataflowCode || obs.mainDataflowCode || '',
-        indicatorCode: obs.indicatorCode,
-        indicatorName: indicatorMap.get(obs.indicatorCode) || obs.indicatorCode,
-        economyCode: obs.economyCode,
-        economyName: economyMap.get(obs.economyCode) || obs.economyCode,
-        counterpartAreaCode: obs.counterpartAreaCode || '',
-        period: obs.period,
-        freqCode: obs.freqCode || 'A',
-        obsValue: obs.obsValue !== null && obs.obsValue !== undefined ? Number(obs.obsValue) : null,
-        unitCode: obs.unitCode || '',
-        unitName: obs.unitCode ? (unitMap.get(obs.unitCode) || obs.unitCode) : '',
-        multiplierCode: obs.unitMultCode || '',
-        multiplierName: mult?.name || '',
-        multiplierFactor: mult?.factor ? Number(mult.factor) : 1,
-        dataSource: obs.dataSource || '',
-        footnote: obs.footnote || ''
-      };
-    });
+    const dataflowCode = dataflowsParam || 'ALL';
 
-    // 9. Also build SDMX-style Series grouped list
-    const seriesMap = new Map<string, any>();
-    formattedData.forEach(obs => {
-      const seriesKey = `${obs.indicatorCode}__${obs.economyCode}__${obs.freqCode}`;
-      if (!seriesMap.has(seriesKey)) {
-        seriesMap.set(seriesKey, {
-          freq: obs.freqCode,
-          indicatorCode: obs.indicatorCode,
-          indicatorName: obs.indicatorName,
-          economyCode: obs.economyCode,
-          economyName: obs.economyName,
+    // 7. Output as JSON if explicitly requested
+    if (format === 'json' || format === 'sdmx-json') {
+      const formattedData = observations.map(obs => {
+        const mult = obs.unitMultCode ? multMap.get(obs.unitMultCode) : undefined;
+        return {
+          id: obs.id,
           datasetCode: obs.datasetCode,
-          dataflowCode: obs.dataflowCode,
-          observations: []
-        });
-      }
-      seriesMap.get(seriesKey).observations.push({
-        period: obs.period,
-        obsValue: obs.obsValue,
-        unitCode: obs.unitCode,
-        unitName: obs.unitName,
-        multiplierCode: obs.multiplierCode,
-        multiplierName: obs.multiplierName,
-        dataSource: obs.dataSource,
-        footnote: obs.footnote
+          dataflowCode: obs.secondaryDataflowCode || obs.mainDataflowCode || '',
+          indicatorCode: obs.indicatorCode,
+          indicatorName: indicatorMap.get(obs.indicatorCode) || obs.indicatorCode,
+          economyCode: obs.economyCode,
+          economyName: economyMap.get(obs.economyCode) || obs.economyCode,
+          counterpartAreaCode: obs.counterpartAreaCode || '',
+          period: obs.period,
+          freqCode: obs.freqCode || 'A',
+          obsValue: obs.obsValue !== null && obs.obsValue !== undefined ? Number(obs.obsValue) : null,
+          unitCode: obs.unitCode || '',
+          unitName: obs.unitCode ? (unitMap.get(obs.unitCode) || obs.unitCode) : '',
+          multiplierCode: obs.unitMultCode || '',
+          multiplierName: mult?.name || '',
+          multiplierFactor: mult?.factor ? Number(mult.factor) : 1,
+          dataSource: obs.dataSource || '',
+          footnote: obs.footnote || ''
+        };
       });
-    });
 
-    const seriesList = Array.from(seriesMap.values());
+      const seriesMap = new Map<string, any>();
+      formattedData.forEach(obs => {
+        const seriesKey = `${obs.indicatorCode}__${obs.economyCode}__${obs.freqCode}`;
+        if (!seriesMap.has(seriesKey)) {
+          seriesMap.set(seriesKey, {
+            freq: obs.freqCode,
+            indicatorCode: obs.indicatorCode,
+            indicatorName: obs.indicatorName,
+            economyCode: obs.economyCode,
+            economyName: obs.economyName,
+            datasetCode: obs.datasetCode,
+            dataflowCode: obs.dataflowCode,
+            observations: []
+          });
+        }
+        seriesMap.get(seriesKey).observations.push({
+          period: obs.period,
+          obsValue: obs.obsValue,
+          unitCode: obs.unitCode,
+          unitName: obs.unitName,
+          multiplierCode: obs.multiplierCode,
+          multiplierName: obs.multiplierName,
+          dataSource: obs.dataSource,
+          footnote: obs.footnote
+        });
+      });
 
-    const response = NextResponse.json({
-      header: {
-        totalSeriesCount: seriesList.length,
-        totalObsCount: formattedData.length,
+      const response = NextResponse.json({
+        header: {
+          totalSeriesCount: seriesMap.size,
+          totalObsCount: formattedData.length,
+          periods: uniquePeriods
+        },
+        data: formattedData,
+        series: Array.from(seriesMap.values()),
         periods: uniquePeriods
-      },
-      data: formattedData,
-      series: seriesList,
-      periods: uniquePeriods
+      });
+      response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1800');
+      return response;
+    }
+
+    // 8. Default format: SDMX XML (sdmx-ml)
+    const timestamp = new Date().toISOString();
+    let xml = `<?xml version="1.0" encoding="utf-8"?>
+<message:StructureSpecificData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns:ns1="urn:sdmx:org.sdmx.infomodel.datastructure.DataStructure=ADB:KIDB_DSD(1.0):ObsLevelDim:TIME_PERIOD" 
+  xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v3_0/message" 
+  xmlns:com="http://www.sdmx.org/resources/sdmxml/schemas/v3_0/common" 
+  xmlns:str="http://www.sdmx.org/resources/sdmxml/schemas/v3_0/structure" 
+  xmlns:ss="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/structurespecific">
+  <message:Header>
+    <message:ID>IREF${Math.floor(Math.random() * 1000000)}</message:ID>
+    <message:Test>false</message:Test>
+    <message:Prepared>${timestamp}</message:Prepared>
+    <message:Sender>ADB_ERDI</message:Sender>
+    <message:Receiver>Unknown</message:Receiver>
+    <message:Structure structureID="ADB_${dataflowCode}_1_0" dimensionAtObservation="TIME_PERIOD" namespace="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=ADB:${dataflowCode}(1.0)">
+      <com:StructureUsage>urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=ADB:${dataflowCode}(1.0)</com:StructureUsage>
+    </message:Structure>
+    <message:DataSetAction>Information</message:DataSetAction>
+    <message:Extracted>${timestamp}</message:Extracted>
+    <message:Source>ERDI Database</message:Source>
+  </message:Header>
+  <message:DataSet ss:structureRef="ADB_KIDB_DSD_1_0" xsi:type="ns1:DataSetType">`;
+
+    // Group observations by Series
+    const seriesMap = new Map<string, any[]>();
+    observations.forEach(o => {
+      const key = `${o.freqCode || 'A'}__${o.indicatorCode}__${o.economyCode}`;
+      if (!seriesMap.has(key)) seriesMap.set(key, []);
+      seriesMap.get(key)!.push(o);
     });
-    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1800');
-    return response;
+
+    for (const [key, obsList] of seriesMap.entries()) {
+      const firstObs = obsList[0];
+      xml += `\n    <Series FREQ="${firstObs.freqCode || 'A'}" INDICATOR="${firstObs.indicatorCode}" ECONOMY_CODE="${firstObs.economyCode}">`;
+      
+      obsList.forEach(obs => {
+        const obsValue = obs.obsValue !== null ? Number(obs.obsValue) : '';
+        const cleanFootnote = obs.footnote ? obs.footnote.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        const cleanDataSource = obs.dataSource ? obs.dataSource.replace(/"/g, '&quot;') : '';
+        
+        xml += `\n      <Obs TIME_PERIOD="${obs.period}" OBS_VALUE="${obsValue}" UNIT="${obs.unitCode || 'PERSONS'}" UNIT_MULT="${obs.unitMultCode || '0'}" DECIMALS="${obs.decimalsCode || '1'}" OBS_STATUS="${obs.obsStatusCode || 'A'}" REF_YEAR="${obs.refYear || ''}" BASE_YEAR="${obs.baseYear || ''}" DATA_SOURCE="${cleanDataSource}" METHODOLOGY="" FOOTNOTE="${cleanFootnote}"/>`;
+      });
+      
+      xml += `\n    </Series>`;
+    }
+
+    xml += `\n  </message:DataSet>\n</message:StructureSpecificData>`;
+
+    return new Response(xml, {
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1800'
+      }
+    });
   } catch (err: any) {
-    console.error('Public Data API Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return new Response(`<error>${err.message}</error>`, {
+      status: 500,
+      headers: { 'Content-Type': 'application/xml' }
+    });
   }
 }

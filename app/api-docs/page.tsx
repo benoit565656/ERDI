@@ -20,7 +20,6 @@ export default function ApiDocsPage() {
 
   // Query Builder State
   const [qbMode, setQbMode] = useState<'INDICATOR' | 'DATAFLOW'>('INDICATOR');
-  const [qbDatasets, setQbDatasets] = useState<string>('ALL');
   const [qbDataflow, setQbDataflow] = useState<string>('EO');
   const [qbIndicators, setQbIndicators] = useState<string>('CPI_PC,BOP_CAB_PER_NGDP');
   const [qbEconomies, setQbEconomies] = useState<string>('ARM,PHI,GEO');
@@ -43,7 +42,6 @@ export default function ApiDocsPage() {
 
   const queryBuilderUrl = useMemo(() => {
     const params = new URLSearchParams();
-    if (qbDatasets && qbDatasets !== 'ALL') params.set('datasets', qbDatasets);
     
     if (qbMode === 'DATAFLOW') {
       if (qbDataflow) params.set('dataflow', qbDataflow);
@@ -54,7 +52,7 @@ export default function ApiDocsPage() {
     if (qbEconomies) params.set('economy', qbEconomies);
     if (qbPeriods) params.set('periods', qbPeriods);
     return `${baseUrl}/api/public-explorer/data?${params.toString()}`;
-  }, [qbMode, qbDatasets, qbDataflow, qbIndicators, qbEconomies, qbPeriods, baseUrl]);
+  }, [qbMode, qbDataflow, qbIndicators, qbEconomies, qbPeriods, baseUrl]);
 
   const handleRunTest = async (targetUrl?: string) => {
     const url = targetUrl || testEndpoint;
@@ -62,6 +60,12 @@ export default function ApiDocsPage() {
     setTestLoading(true);
     setTestResponse(null);
     setTestStatus(null);
+    
+    // Smooth scroll down to the Live API Test Runner Console
+    setTimeout(() => {
+      document.getElementById('api-console')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+
     const start = performance.now();
     try {
       const res = await fetch(url);
@@ -148,7 +152,7 @@ export default function ApiDocsPage() {
               <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: '#0f172a' }}>/api/public-explorer/data</h2>
             </div>
             <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
-              Query macroeconomic and social observation data values by specifying either a <code>dataflow</code> code (for all indicators in a category) or specific <code>indicator</code> codes. Returns values alongside units, multipliers, and periods.
+              Query macroeconomic and social observation data values by specifying either a <code>dataflow</code> code (for all indicators in a category) or specific <code>indicator</code> codes. Returns SDMX-ML XML formatted response by default.
             </p>
 
             <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#334155', marginBottom: '12px' }}>Query Parameters</h4>
@@ -167,7 +171,7 @@ export default function ApiDocsPage() {
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>indicator <span style={{ color: '#94a3b8', fontWeight: 400 }}>(or indicators)</span></td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
                     <td style={{ padding: '12px 14px' }}><span style={{ color: '#2563eb', fontWeight: 600 }}>Required (or dataflow)</span></td>
-                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated indicator code(s) (e.g. <code>CPI_PC,BOP_CAB_PER_NGDP</code>).</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated indicator code(s) (e.g. <code>CPI_PC,BOP_CAB_PER_NGDP</code>). Support <code>+</code> or <code>,</code> separators. Use <code>.</code> for wildcard.</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>dataflow <span style={{ color: '#94a3b8', fontWeight: 400 }}>(or dataflows)</span></td>
@@ -179,19 +183,19 @@ export default function ApiDocsPage() {
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>economy <span style={{ color: '#94a3b8', fontWeight: 400 }}>(or economies)</span></td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
                     <td style={{ padding: '12px 14px' }}><span style={{ color: '#dc2626', fontWeight: 600 }}>Required</span></td>
-                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated 3-letter ISO economy code(s) (e.g. <code>ARM,PHI,GEO</code>).</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>datasets</td>
-                    <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
-                    <td style={{ padding: '12px 14px', color: '#64748b' }}>Optional</td>
-                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated dataset filter (<code>KIDB,ADO,ARIC,EEMRIOT</code> or <code>ALL</code>).</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated 3-letter ISO economy code(s) (e.g. <code>ARM,PHI,GEO</code>). Support <code>+</code> or <code>,</code> separators. Use <code>.</code> for wildcard.</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>periods</td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
                     <td style={{ padding: '12px 14px', color: '#64748b' }}>Optional</td>
                     <td style={{ padding: '12px 14px', color: '#334155' }}>Comma-separated period years (e.g. <code>2020,2021,2022</code>). Defaults to last 15 available years.</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#2563eb' }}>format</td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>string</td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>Optional</td>
+                    <td style={{ padding: '12px 14px', color: '#334155' }}>Output format (<code>sdmx-ml</code> (default XML) or <code>sdmx-json</code> / <code>json</code>).</td>
                   </tr>
                 </tbody>
               </table>
@@ -209,7 +213,7 @@ export default function ApiDocsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                          1. Option 1: Query entire Dataflow (Economy & Output) for Philippines (PHI) and Armenia (ARM):
+                          1. Option 1: Query entire Dataflow (Economy & Output) for Philippines (PHI) and Armenia (ARM) as XML (default):
                         </div>
                         <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '6px', color: '#38bdf8', fontFamily: 'monospace', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span>GET {baseUrl}/api/public-explorer/data?dataflow=EO&economy=PHI,ARM</span>
@@ -229,35 +233,20 @@ export default function ApiDocsPage() {
                 },
                 {
                   key: '2',
-                  label: <span style={{ fontWeight: 700, color: '#1e293b' }}>Response Format Example</span>,
+                  label: <span style={{ fontWeight: 700, color: '#1e293b' }}>XML Response Format Example (Default)</span>,
                   children: (
-                    <pre style={{ background: '#0f172a', color: '#f8fafc', padding: '16px', borderRadius: '6px', fontSize: '13px', overflowX: 'auto', margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
-{`{
-  "header": {
-    "totalSeriesCount": 1,
-    "totalObsCount": 1
-  },
-  "data": [
-    {
-      "id": "obs-101",
-      "datasetCode": "KIDB",
-      "indicatorCode": "CPI_PC",
-      "economyCode": "ARM",
-      "period": "2024",
-      "obsValue": 3.2
-    }
-  ],
-  "series": [
-    {
-      "freq": "A",
-      "indicatorCode": "CPI_PC",
-      "economyCode": "ARM",
-      "observations": [
-        { "period": "2024", "obsValue": 3.2 }
-      ]
-    }
-  ]
-}`}
+                    <pre style={{ background: '#0f172a', color: '#a7f3d0', padding: '16px', borderRadius: '6px', fontSize: '13px', overflowX: 'auto', margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
+{`<message:StructureSpecificData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ...>
+  <message:Header>
+    <message:ID>IREF928374</message:ID>
+    <message:Sender>ADB_ERDI</message:Sender>
+  </message:Header>
+  <message:DataSet ss:structureRef="ADB_KIDB_DSD_1_0" xsi:type="ns1:DataSetType">
+    <Series FREQ="A" INDICATOR="CPI_PC" ECONOMY_CODE="ARM">
+      <Obs TIME_PERIOD="2024" OBS_VALUE="3.2" UNIT="PERSONS" UNIT_MULT="0" DECIMALS="1" OBS_STATUS="A" REF_YEAR="2024"/>
+    </Series>
+  </message:DataSet>
+</message:StructureSpecificData>`}
                     </pre>
                   )
                 },
@@ -267,7 +256,7 @@ export default function ApiDocsPage() {
                   children: (
                     <div>
                       <p style={{ fontSize: '13px', color: '#475569', marginBottom: '8px' }}>
-                        Query the ERDI REST API in Python using <code>requests</code>:
+                        Query the ERDI API in Python using <code>requests</code>:
                       </p>
                       <pre style={{ background: '#0f172a', color: '#f8fafc', padding: '16px', borderRadius: '6px', fontSize: '13px', overflowX: 'auto', margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
 {`import requests
@@ -276,7 +265,8 @@ url = "${baseUrl}/api/public-explorer/data"
 params = {
     "indicator": "CPI_PC",
     "economy": "ARM,PHI,GEO",
-    "periods": "2020,2021,2022,2023,2024"
+    "periods": "2020,2021,2022,2023,2024",
+    "format": "json"
 }
 
 response = requests.get(url, params=params)
@@ -302,16 +292,6 @@ print(f"Retrieved {len(data['data'])} observation points")
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Dataset Filter</label>
-                          <Select value={qbDatasets} onChange={setQbDatasets} style={{ width: '100%' }}>
-                            <Select.Option value="ALL">ALL (KIDB, ADO, ARIC, EEMRIOT)</Select.Option>
-                            <Select.Option value="KIDB">KIDB (Key Indicators Database)</Select.Option>
-                            <Select.Option value="ADO">ADO (Asian Development Outlook)</Select.Option>
-                            <Select.Option value="ARIC">ARIC (Asia Regional Integration Center)</Select.Option>
-                          </Select>
-                        </div>
-
                         {qbMode === 'DATAFLOW' ? (
                           <div>
                             <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Select Dataflow Code</label>
@@ -386,7 +366,7 @@ print(f"Retrieved {len(data['data'])} observation points")
                   </Button>
                 </div>
                 <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-                  Returns complete catalog of top-level Dataflows and Sub-topics across all datasets.
+                  Returns complete catalog of top-level Dataflows and Sub-topics.
                 </p>
               </div>
               
@@ -466,7 +446,7 @@ print(f"Retrieved {len(data['data'])} observation points")
                   </Button>
                 </div>
                 <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-                  Returns SDMX observations XML (or JSON format if passing <code>?format=json</code>) matching standard KIDB formats.
+                  Returns SDMX observations XML matching standard KIDB formats.
                 </p>
               </div>
 
@@ -500,49 +480,47 @@ print(f"Retrieved {len(data['data'])} observation points")
           </div>
 
           {/* LIVE TEST RUNNER CONSOLE (WITH FIXED SCROLLER INSIDE BLOCK) */}
-          {testEndpoint && (
-            <div style={{ background: '#0f172a', borderRadius: '12px', padding: '24px', color: '#f8fafc', boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '100%', overflow: 'hidden' }}>
-                  <ThunderboltOutlined style={{ color: '#38bdf8', fontSize: '18px' }} />
-                  <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap' }}>Live API Test Console</span>
-                  <code style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', color: '#38bdf8', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{testEndpoint}</code>
-                </div>
-                {testStatus && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ background: testStatus === 200 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: testStatus === 200 ? '#4ade80' : '#f87171', padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 700 }}>
-                      {testStatus} {testStatus === 200 ? 'OK' : 'ERROR'}
-                    </span>
-                    {testTime && <span style={{ color: '#94a3b8', fontSize: '12px' }}>{testTime} ms</span>}
-                  </div>
-                )}
+          <div id="api-console" style={{ background: '#0f172a', borderRadius: '12px', padding: '24px', color: '#f8fafc', boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '100%', overflow: 'hidden' }}>
+                <ThunderboltOutlined style={{ color: '#38bdf8', fontSize: '18px' }} />
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap' }}>Live API Test Console</span>
+                <code style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', color: '#38bdf8', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{testEndpoint}</code>
               </div>
-
-              {testLoading ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>
-                  <Spin description="Executing API request..." style={{ color: '#fff' }} />
-                </div>
-              ) : testResponse ? (
-                <div style={{ position: 'relative', border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
-                  <Button 
-                    size="small" 
-                    icon={copiedKey === 'test' ? <CheckOutlined style={{ color: '#4ade80' }} /> : <CopyOutlined />} 
-                    onClick={() => copyToClipboard(testResponse.__isXml ? testResponse.content : JSON.stringify(testResponse, null, 2), 'test')}
-                    style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10, background: '#1e293b', color: '#fff', border: '1px solid #334155' }}
-                  >
-                    Copy {testResponse.__isXml ? 'XML' : 'JSON'}
-                  </Button>
-                  <pre style={{ background: '#020617', padding: '16px', borderRadius: '8px', maxHeight: '300px', overflowX: 'auto', overflowY: 'auto', fontSize: '13px', color: testResponse.__isXml ? '#a7f3d0' : '#38bdf8', fontFamily: 'monospace', margin: 0, maxWidth: '100%', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
-                    {testResponse.__isXml ? testResponse.content : JSON.stringify(testResponse, null, 2)}
-                  </pre>
-                </div>
-              ) : (
-                <div style={{ background: '#1e293b', borderRadius: '8px', padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-                  Click "Test Endpoint" or "Execute Request Live" above to test responses in real-time.
+              {testStatus && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ background: testStatus === 200 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: testStatus === 200 ? '#4ade80' : '#f87171', padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 700 }}>
+                    {testStatus} {testStatus === 200 ? 'OK' : 'ERROR'}
+                  </span>
+                  {testTime && <span style={{ color: '#94a3b8', fontSize: '12px' }}>{testTime} ms</span>}
                 </div>
               )}
             </div>
-          )}
+
+            {testLoading ? (
+              <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>
+                <Spin description="Executing API request..." style={{ color: '#fff' }} />
+              </div>
+            ) : testResponse ? (
+              <div style={{ position: 'relative', border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
+                <Button 
+                  size="small" 
+                  icon={copiedKey === 'test' ? <CheckOutlined style={{ color: '#4ade80' }} /> : <CopyOutlined />} 
+                  onClick={() => copyToClipboard(testResponse.__isXml ? testResponse.content : JSON.stringify(testResponse, null, 2), 'test')}
+                  style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10, background: '#1e293b', color: '#fff', border: '1px solid #334155' }}
+                >
+                  Copy {testResponse.__isXml ? 'XML' : 'JSON'}
+                </Button>
+                <pre style={{ background: '#020617', padding: '16px', borderRadius: '8px', maxHeight: '300px', overflowX: 'auto', overflowY: 'auto', fontSize: '13px', color: testResponse.__isXml ? '#a7f3d0' : '#38bdf8', fontFamily: 'monospace', margin: 0, maxWidth: '100%', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
+                  {testResponse.__isXml ? testResponse.content : JSON.stringify(testResponse, null, 2)}
+                </pre>
+              </div>
+            ) : (
+              <div style={{ background: '#1e293b', borderRadius: '8px', padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                Click "Test Endpoint" or "Execute Request Live" above to test responses in real-time.
+              </div>
+            )}
+          </div>
 
         </div>
       </div>
