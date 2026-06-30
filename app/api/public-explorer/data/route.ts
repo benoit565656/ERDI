@@ -5,13 +5,14 @@ import { memoryCache } from '@/lib/cache';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const datasetsParam = searchParams.get('datasets');
     const dataflowsParam = searchParams.get('dataflows') || searchParams.get('dataflow');
     const indicatorsParam = searchParams.get('indicators') || searchParams.get('indicator');
     const economiesParam = searchParams.get('economies') || searchParams.get('economy');
     const periodsParam = searchParams.get('periods') || searchParams.get('period');
     const startPeriod = searchParams.get('startPeriod') || searchParams.get('start');
     const endPeriod = searchParams.get('endPeriod') || searchParams.get('end');
-    const format = searchParams.get('format') || 'sdmx-ml'; // XML by default
+    const format = searchParams.get('format') || 'json'; // JSON by default to prevent breaking existing UI components
 
     // 1. Parse indicator codes (Support + or , and wildcard . / * / ALL)
     let selectedIndicators: string[] = [];
@@ -57,8 +58,21 @@ export async function GET(req: Request) {
       ? counterpartParam.split('+').flatMap(c => c.split(',')).map(c => c.trim()).filter(Boolean)
       : [];
 
-    // 3. Build base where clause (Datasets parameter is removed completely)
+    // 3. Resolve datasets
+    let selectedDatasets: string[] = [];
+    if (datasetsParam && datasetsParam !== 'ALL') {
+      selectedDatasets = datasetsParam.split('+').flatMap(d => d.split(',')).map(d => d.trim());
+    } else {
+      const allDs = await prisma.dataset.findMany({
+        where: { status: 'ACTIVE' },
+        select: { code: true }
+      });
+      selectedDatasets = allDs.map(d => d.code);
+    }
+
+    // 4. Build base where clause
     const whereClause: any = {
+      datasetCode: { in: selectedDatasets },
       isPublished: true,
       deletedAt: null,
     };
@@ -104,7 +118,7 @@ export async function GET(req: Request) {
       whereClause.period = { in: pList };
     }
 
-    // 4. Fast O(1) lookup maps with memory cache
+    // 5. Fast O(1) lookup maps with memory cache
     let unitNames = memoryCache.get<any[]>('commonUnits');
     if (!unitNames) {
       unitNames = await prisma.commonUnit.findMany({ select: { code: true, name: true } });
@@ -117,7 +131,7 @@ export async function GET(req: Request) {
       memoryCache.set('commonMultipliers', multiplierNames, 3600);
     }
 
-    // 5. Fetch observations
+    // 6. Fetch observations
     const observations = await prisma.observation.findMany({
       where: whereClause,
       select: {
@@ -148,7 +162,7 @@ export async function GET(req: Request) {
       take: 5000
     });
 
-    // 6. Extract unique codes for fast metadata lookup maps
+    // 7. Extract unique codes for fast metadata lookup maps
     const uniqueIndicators = Array.from(new Set(observations.map(o => o.indicatorCode)));
     const uniqueEconomies = Array.from(new Set(observations.map(o => o.economyCode)));
     const uniquePeriods = Array.from(new Set(observations.map(o => o.period))).sort();
@@ -165,7 +179,7 @@ export async function GET(req: Request) {
 
     const dataflowCode = dataflowsParam || 'ALL';
 
-    // 7. Output as JSON if explicitly requested
+    // 8. Output as JSON if explicitly requested or by default
     if (format === 'json' || format === 'sdmx-json') {
       const formattedData = observations.map(obs => {
         const mult = obs.unitMultCode ? multMap.get(obs.unitMultCode) : undefined;
@@ -232,7 +246,7 @@ export async function GET(req: Request) {
       return response;
     }
 
-    // 8. Default format: SDMX XML (sdmx-ml)
+    // 9. Output as XML if format is sdmx-ml / xml
     const timestamp = new Date().toISOString();
     let xml = `<?xml version="1.0" encoding="utf-8"?>
 <message:StructureSpecificData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
