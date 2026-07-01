@@ -1124,6 +1124,86 @@ export default function DataExplorerPage() {
     });
   }, []);
 
+  const renderNodeChildren = (nodes: any[], depth: number = 0) => {
+    if (!nodes || !Array.isArray(nodes)) return null;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {nodes.map(node => {
+          if (node.isLeaf) {
+            const isChecked = checkedIndicatorKeys.includes(node.key);
+            return (
+              <div 
+                key={node.key} 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'flex-start', 
+                  gap: '8px', 
+                  paddingLeft: `${depth * 12 + 4}px` 
+                }}
+              >
+                <Checkbox 
+                  checked={isChecked} 
+                  disabled={node.disabled}
+                  onChange={(e) => {
+                    setCheckedIndicatorKeys(prev => 
+                      e.target.checked 
+                        ? [...prev, node.key] 
+                        : prev.filter(k => k !== node.key)
+                    );
+                  }}
+                  style={{ marginTop: '2px' }}
+                />
+                <span style={{ fontSize: '12px', color: node.disabled ? '#94a3b8' : '#475569', lineHeight: '17px', cursor: node.disabled ? 'not-allowed' : 'default' }}>
+                  <BarChartOutlined style={{ color: node.disabled ? '#94a3b8' : '#155dfc', marginRight: '6px' }} />
+                  {capitalizeWords(node.title)}
+                </span>
+              </div>
+            );
+          }
+
+          // Subcategory Category node (L2, L3, L4, etc.)
+          const nodeCheckState = getLevel2CheckState(node);
+          const isExpanded = effectiveExpandedLevel2.has(node.key);
+          return (
+            <div 
+              key={node.key} 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '6px', 
+                paddingLeft: `${depth * 12}px` 
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                <div 
+                  onClick={() => toggleLevel2Expand(node.key)}
+                  style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flex: 1, gap: '6px' }}
+                >
+                  {isExpanded ? <DownOutlined style={{ fontSize: '8px', color: '#64748b' }} /> : <RightOutlined style={{ fontSize: '8px', color: '#64748b' }} />}
+                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155', userSelect: 'none' }}>
+                    {capitalizeWords(node.title.includes(',') ? node.title.split(',').slice(1).join(',').trim() : node.title)}
+                  </span>
+                </div>
+                <Checkbox 
+                  checked={nodeCheckState.checked} 
+                  indeterminate={nodeCheckState.indeterminate} 
+                  onChange={(e) => handleCheckLevel2Node(node, e.target.checked)}
+                />
+              </div>
+
+              {isExpanded && node.children && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '4px 0 8px 0', borderLeft: '1px dashed #cbd5e1' }}>
+                  {renderNodeChildren(node.children, depth + 1)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const effectiveExpandedLevel2 = React.useMemo(() => {
     if (searchQuery.trim()) {
       const keys = new Set<string>();
@@ -1143,9 +1223,15 @@ export default function DataExplorerPage() {
 
   const columnsData = React.useMemo(() => {
     const cols: any[][] = [[], [], [], []];
-    const heights = [0, 0, 0, 0];
+    const heights = [0, 0, 0]; // heights for columns 1-3 only
 
     processedTreeData.forEach(cat => {
+      const isSdg = cat.code === 'SDG' || cat.title.toLowerCase().includes('sustainable development goals');
+      if (isSdg) {
+        cols[3].push(cat);
+        return;
+      }
+
       let height = 2; // base height
       if (cat.children) {
         height += cat.children.length; // Level 2 items
@@ -1153,7 +1239,7 @@ export default function DataExplorerPage() {
       
       let minColIndex = 0;
       let minHeight = heights[0];
-      for (let i = 1; i < 4; i++) {
+      for (let i = 1; i < 3; i++) {
         if (heights[i] < minHeight) {
           minHeight = heights[i];
           minColIndex = i;
@@ -1729,7 +1815,7 @@ export default function DataExplorerPage() {
                         </span>
                       </div>
                       
-                      <div style={{ maxHeight: '550px', overflowY: 'auto', paddingRight: '4px' }}>
+                      <div style={{ paddingRight: '4px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
                           {columnsData.map((colCategories, colIdx) => (
                             <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1750,87 +1836,9 @@ export default function DataExplorerPage() {
                                       />
                                     </div>
 
-                                    {/* Level 2 Subcategories & Direct Leaves */}
+                                    {/* Level 2 Subcategories & Direct Leaves (Recursive support for L3, L4 etc.) */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                      {cat.children && cat.children.map((sub: any) => {
-                                        if (sub.isLeaf) {
-                                          // Direct child leaf under root Level 1
-                                          const isChecked = checkedIndicatorKeys.includes(sub.key);
-                                          return (
-                                            <div key={sub.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', paddingLeft: '4px' }}>
-                                              <Checkbox 
-                                                checked={isChecked} 
-                                                disabled={sub.disabled}
-                                                onChange={(e) => {
-                                                  setCheckedIndicatorKeys(prev => 
-                                                    e.target.checked 
-                                                      ? [...prev, sub.key] 
-                                                      : prev.filter(k => k !== sub.key)
-                                                  );
-                                                }}
-                                                style={{ marginTop: '2px' }}
-                                              />
-                                              <span style={{ fontSize: '12.5px', color: sub.disabled ? '#94a3b8' : '#334155', lineHeight: '18px' }}>
-                                                <BarChartOutlined style={{ color: sub.disabled ? '#94a3b8' : '#155dfc', marginRight: '6px' }} />
-                                                {capitalizeWords(sub.title)}
-                                              </span>
-                                            </div>
-                                          );
-                                        }
-
-                                        // Subcategory (Level 2)
-                                        const level2State = getLevel2CheckState(sub);
-                                        const isExpanded = effectiveExpandedLevel2.has(sub.key);
-                                        return (
-                                          <div key={sub.key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                                              <div 
-                                                onClick={() => toggleLevel2Expand(sub.key)}
-                                                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flex: 1, gap: '6px' }}
-                                              >
-                                                {isExpanded ? <DownOutlined style={{ fontSize: '9px', color: '#64748b' }} /> : <RightOutlined style={{ fontSize: '9px', color: '#64748b' }} />}
-                                                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155', userSelect: 'none' }}>
-                                                  {capitalizeWords(sub.title.includes(',') ? sub.title.split(',').slice(1).join(',').trim() : sub.title)}
-                                                </span>
-                                              </div>
-                                              <Checkbox 
-                                                checked={level2State.checked} 
-                                                indeterminate={level2State.indeterminate} 
-                                                onChange={(e) => handleCheckLevel2Node(sub, e.target.checked)}
-                                              />
-                                            </div>
-
-                                            {/* Subcategory leaf indicators (Level 3) */}
-                                            {isExpanded && sub.children && (
-                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '16px', margin: '4px 0 8px 0', borderLeft: '1.5px dashed #cbd5e1' }}>
-                                                {sub.children.map((leaf: any) => {
-                                                  const isLeafChecked = checkedIndicatorKeys.includes(leaf.key);
-                                                  return (
-                                                    <div key={leaf.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                                                      <Checkbox 
-                                                        checked={isLeafChecked} 
-                                                        disabled={leaf.disabled}
-                                                        onChange={(e) => {
-                                                          setCheckedIndicatorKeys(prev => 
-                                                            e.target.checked 
-                                                              ? [...prev, leaf.key] 
-                                                              : prev.filter(k => k !== leaf.key)
-                                                          );
-                                                        }}
-                                                        style={{ marginTop: '2px' }}
-                                                      />
-                                                      <span style={{ fontSize: '12px', color: leaf.disabled ? '#94a3b8' : '#475569', lineHeight: '17px', cursor: leaf.disabled ? 'not-allowed' : 'default' }}>
-                                                        <BarChartOutlined style={{ color: leaf.disabled ? '#94a3b8' : '#155dfc', marginRight: '6px' }} />
-                                                        {capitalizeWords(leaf.title)}
-                                                      </span>
-                                                    </div>
-                                                  );
-                                                })}
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
+                                      {cat.children && renderNodeChildren(cat.children, 0)}
                                     </div>
                                   </div>
                                 );
