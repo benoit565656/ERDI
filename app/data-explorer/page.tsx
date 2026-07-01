@@ -17,6 +17,16 @@ import {
   BarChartOutlined,
   PlusSquareOutlined,
   MinusSquareOutlined,
+  UserOutlined,
+  DollarCircleOutlined,
+  CarOutlined,
+  ThunderboltOutlined,
+  EnvironmentOutlined,
+  BankOutlined,
+  DashboardOutlined,
+  ShareAltOutlined,
+  RightOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import LineChartCard from '@/components/Visualizations/LineChartCard';
@@ -119,6 +129,8 @@ export default function DataExplorerPage() {
   const [activeTab, setActiveTab] = useState<string>('table');
   // Expand/collapse state for indicator tree
   const [expandedIndicatorKeys, setExpandedIndicatorKeys] = useState<React.Key[]>([]);
+  // Expand/collapse state for custom Level 2 categories in the 4-column layout
+  const [expandedLevel2Keys, setExpandedLevel2Keys] = useState<string[]>([]);
   // Expand/collapse state for economy tree
   const [expandedEconomyKeys, setExpandedEconomyKeys] = useState<React.Key[]>([]);
 
@@ -992,6 +1004,169 @@ export default function DataExplorerPage() {
     return traverseAndDisable(filteredTreeData);
   }, [filteredTreeData, hasAricSelected, hasEemriotSelected, hasKidbAdoSelected]);
 
+  const getCategoryIcon = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes('people') || t.includes('labor') || t.includes('poverty') || t.includes('social')) {
+      return <UserOutlined style={{ marginRight: 8, color: '#2563eb' }} />;
+    }
+    if (t.includes('economy') || t.includes('national accounts') || t.includes('production')) {
+      return <LineChartOutlined style={{ marginRight: 8, color: '#16a34a' }} />;
+    }
+    if (t.includes('money') || t.includes('finance') || t.includes('price') || t.includes('rate')) {
+      return <DollarCircleOutlined style={{ marginRight: 8, color: '#d97706' }} />;
+    }
+    if (t.includes('globalization') || t.includes('trade') || t.includes('reserves') || t.includes('debt') || t.includes('capital') || t.includes('tourism')) {
+      return <GlobalOutlined style={{ marginRight: 8, color: '#0891b2' }} />;
+    }
+    if (t.includes('transport') || t.includes('communication')) {
+      return <CarOutlined style={{ marginRight: 8, color: '#4f46e5' }} />;
+    }
+    if (t.includes('energy') || t.includes('electricity') || t.includes('power')) {
+      return <ThunderboltOutlined style={{ marginRight: 8, color: '#eab308' }} />;
+    }
+    if (t.includes('environment') || t.includes('pollution') || t.includes('water') || t.includes('climate') || t.includes('emissions')) {
+      return <EnvironmentOutlined style={{ marginRight: 8, color: '#059669' }} />;
+    }
+    if (t.includes('government') || t.includes('governance') || t.includes('fiscal')) {
+      return <BankOutlined style={{ marginRight: 8, color: '#7c3aed' }} />;
+    }
+    if (t.includes('sustainable') || t.includes('development') || t.includes('goal') || t.includes('sdg')) {
+      return <DashboardOutlined style={{ marginRight: 8, color: '#db2777' }} />;
+    }
+    if (t.includes('cooperation') || t.includes('integration') || t.includes('partner')) {
+      return <ShareAltOutlined style={{ marginRight: 8, color: '#ea580c' }} />;
+    }
+    return <FolderOutlined style={{ marginRight: 8, color: '#64748b' }} />;
+  };
+
+  const getLeafKeys = useCallback((node: any): string[] => {
+    const keys: string[] = [];
+    const traverse = (n: any) => {
+      if (n.isLeaf) {
+        keys.push(n.key);
+      } else if (n.children) {
+        n.children.forEach(traverse);
+      }
+    };
+    traverse(node);
+    return keys;
+  }, []);
+
+  const getLevel2CheckState = useCallback((node: any) => {
+    const leaves = getLeafKeys(node);
+    if (leaves.length === 0) return { checked: false, indeterminate: false };
+    
+    let checkedCount = 0;
+    leaves.forEach(leaf => {
+      if (checkedIndicatorKeys.includes(leaf)) checkedCount++;
+    });
+
+    return {
+      checked: checkedCount === leaves.length,
+      indeterminate: checkedCount > 0 && checkedCount < leaves.length
+    };
+  }, [checkedIndicatorKeys, getLeafKeys]);
+
+  const getLevel1CheckState = useCallback((node: any) => {
+    const leaves = getLeafKeys(node);
+    if (leaves.length === 0) return { checked: false, indeterminate: false };
+    
+    let checkedCount = 0;
+    leaves.forEach(leaf => {
+      if (checkedIndicatorKeys.includes(leaf)) checkedCount++;
+    });
+
+    return {
+      checked: checkedCount === leaves.length,
+      indeterminate: checkedCount > 0 && checkedCount < leaves.length
+    };
+  }, [checkedIndicatorKeys, getLeafKeys]);
+
+  const handleCheckLevel2Node = useCallback((node: any, checked: boolean) => {
+    const leaves = getLeafKeys(node);
+    setCheckedIndicatorKeys(prev => {
+      const next = new Set(prev);
+      leaves.forEach(leaf => {
+        if (checked) {
+          next.add(leaf);
+        } else {
+          next.delete(leaf);
+        }
+      });
+      return Array.from(next);
+    });
+  }, [getLeafKeys]);
+
+  const handleCheckLevel1Node = useCallback((node: any, checked: boolean) => {
+    const leaves = getLeafKeys(node);
+    setCheckedIndicatorKeys(prev => {
+      const next = new Set(prev);
+      leaves.forEach(leaf => {
+        if (checked) {
+          next.add(leaf);
+        } else {
+          next.delete(leaf);
+        }
+      });
+      return Array.from(next);
+    });
+  }, [getLeafKeys]);
+
+  const toggleLevel2Expand = useCallback((key: string) => {
+    setExpandedLevel2Keys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return Array.from(next);
+    });
+  }, []);
+
+  const effectiveExpandedLevel2 = React.useMemo(() => {
+    if (searchQuery.trim()) {
+      const keys = new Set<string>();
+      processedTreeData.forEach(cat => {
+        if (cat.children) {
+          cat.children.forEach((sub: any) => {
+            if (sub.children && sub.children.length > 0) {
+              keys.add(sub.key);
+            }
+          });
+        }
+      });
+      return keys;
+    }
+    return new Set(expandedLevel2Keys);
+  }, [expandedLevel2Keys, searchQuery, processedTreeData]);
+
+  const columnsData = React.useMemo(() => {
+    const cols: any[][] = [[], [], [], []];
+    const heights = [0, 0, 0, 0];
+
+    processedTreeData.forEach(cat => {
+      let height = 2; // base height
+      if (cat.children) {
+        height += cat.children.length; // Level 2 items
+      }
+      
+      let minColIndex = 0;
+      let minHeight = heights[0];
+      for (let i = 1; i < 4; i++) {
+        if (heights[i] < minHeight) {
+          minHeight = heights[i];
+          minColIndex = i;
+        }
+      }
+
+      cols[minColIndex].push(cat);
+      heights[minColIndex] += height;
+    });
+
+    return cols;
+  }, [processedTreeData]);
+
   // 4. ACTION HANDLERS
   const handleDatasetChange = (checkedValues: any[]) => {
     setSelectedDatasets(checkedValues as string[]);
@@ -1019,12 +1194,29 @@ export default function DataExplorerPage() {
     return keys;
   }, []);
 
+  const getAllLevel2Keys = useCallback((nodes: any[]): string[] => {
+    const keys: string[] = [];
+    const traverse = (list: any[]) => {
+      if (!list || !Array.isArray(list)) return;
+      list.forEach(node => {
+        if (!node.isLeaf) {
+          if (node.parentCode) {
+            keys.push(node.key);
+          }
+          if (node.children) traverse(node.children);
+        }
+      });
+    };
+    traverse(nodes);
+    return keys;
+  }, []);
+
   const handleExpandAll = useCallback(() => {
-    setExpandedIndicatorKeys(getAllParentKeys(filteredTreeData));
-  }, [filteredTreeData, getAllParentKeys]);
+    setExpandedLevel2Keys(getAllLevel2Keys(filteredTreeData));
+  }, [filteredTreeData, getAllLevel2Keys]);
 
   const handleCollapseAll = useCallback(() => {
-    setExpandedIndicatorKeys([]);
+    setExpandedLevel2Keys([]);
   }, []);
 
   const handleExpandAllEconomies = useCallback(() => {
@@ -1537,16 +1729,115 @@ export default function DataExplorerPage() {
                         </span>
                       </div>
                       
-                      <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
-                        <Tree
-                          checkable
-                          expandedKeys={expandedIndicatorKeys}
-                          onExpand={(keys) => setExpandedIndicatorKeys(keys as React.Key[])}
-                          checkedKeys={checkedIndicatorKeys}
-                          onCheck={(keys) => setCheckedIndicatorKeys(keys as React.Key[])}
-                          treeData={processedTreeData}
-                          titleRender={renderIndicatorTreeTitle}
-                        />
+                      <div style={{ maxHeight: '550px', overflowY: 'auto', paddingRight: '4px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                          {columnsData.map((colCategories, colIdx) => (
+                            <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                              {colCategories.map(cat => {
+                                const level1State = getLevel1CheckState(cat);
+                                return (
+                                  <div key={cat.key} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                    {/* Level 1 Header */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '12px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, fontSize: '13.5px', color: '#0f172a' }}>
+                                        {getCategoryIcon(cat.title)}
+                                        <span>{capitalizeWords(cat.title)}</span>
+                                      </div>
+                                      <Checkbox 
+                                        checked={level1State.checked} 
+                                        indeterminate={level1State.indeterminate} 
+                                        onChange={(e) => handleCheckLevel1Node(cat, e.target.checked)}
+                                      />
+                                    </div>
+
+                                    {/* Level 2 Subcategories & Direct Leaves */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                      {cat.children && cat.children.map((sub: any) => {
+                                        if (sub.isLeaf) {
+                                          // Direct child leaf under root Level 1
+                                          const isChecked = checkedIndicatorKeys.includes(sub.key);
+                                          return (
+                                            <div key={sub.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', paddingLeft: '4px' }}>
+                                              <Checkbox 
+                                                checked={isChecked} 
+                                                disabled={sub.disabled}
+                                                onChange={(e) => {
+                                                  setCheckedIndicatorKeys(prev => 
+                                                    e.target.checked 
+                                                      ? [...prev, sub.key] 
+                                                      : prev.filter(k => k !== sub.key)
+                                                  );
+                                                }}
+                                                style={{ marginTop: '2px' }}
+                                              />
+                                              <span style={{ fontSize: '12.5px', color: sub.disabled ? '#94a3b8' : '#334155', lineHeight: '18px' }}>
+                                                <BarChartOutlined style={{ color: sub.disabled ? '#94a3b8' : '#155dfc', marginRight: '6px' }} />
+                                                {capitalizeWords(sub.title)}
+                                              </span>
+                                            </div>
+                                          );
+                                        }
+
+                                        // Subcategory (Level 2)
+                                        const level2State = getLevel2CheckState(sub);
+                                        const isExpanded = effectiveExpandedLevel2.has(sub.key);
+                                        return (
+                                          <div key={sub.key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                                              <div 
+                                                onClick={() => toggleLevel2Expand(sub.key)}
+                                                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flex: 1, gap: '6px' }}
+                                              >
+                                                {isExpanded ? <DownOutlined style={{ fontSize: '9px', color: '#64748b' }} /> : <RightOutlined style={{ fontSize: '9px', color: '#64748b' }} />}
+                                                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155', userSelect: 'none' }}>
+                                                  {capitalizeWords(sub.title.includes(',') ? sub.title.split(',').slice(1).join(',').trim() : sub.title)}
+                                                </span>
+                                              </div>
+                                              <Checkbox 
+                                                checked={level2State.checked} 
+                                                indeterminate={level2State.indeterminate} 
+                                                onChange={(e) => handleCheckLevel2Node(sub, e.target.checked)}
+                                              />
+                                            </div>
+
+                                            {/* Subcategory leaf indicators (Level 3) */}
+                                            {isExpanded && sub.children && (
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '16px', margin: '4px 0 8px 0', borderLeft: '1.5px dashed #cbd5e1' }}>
+                                                {sub.children.map((leaf: any) => {
+                                                  const isLeafChecked = checkedIndicatorKeys.includes(leaf.key);
+                                                  return (
+                                                    <div key={leaf.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                      <Checkbox 
+                                                        checked={isLeafChecked} 
+                                                        disabled={leaf.disabled}
+                                                        onChange={(e) => {
+                                                          setCheckedIndicatorKeys(prev => 
+                                                            e.target.checked 
+                                                              ? [...prev, leaf.key] 
+                                                              : prev.filter(k => k !== leaf.key)
+                                                          );
+                                                        }}
+                                                        style={{ marginTop: '2px' }}
+                                                      />
+                                                      <span style={{ fontSize: '12px', color: leaf.disabled ? '#94a3b8' : '#475569', lineHeight: '17px', cursor: leaf.disabled ? 'not-allowed' : 'default' }}>
+                                                        <BarChartOutlined style={{ color: leaf.disabled ? '#94a3b8' : '#155dfc', marginRight: '6px' }} />
+                                                        {capitalizeWords(leaf.title)}
+                                                      </span>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ) : (
