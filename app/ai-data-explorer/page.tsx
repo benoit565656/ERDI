@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Input, Button, Table, Space, Alert, Empty, Badge, Spin, Tooltip as AntTooltip } from 'antd';
+import { Card, Input, Button, Table, Space, Alert, Empty, Badge, Spin, Tooltip as AntTooltip, Select } from 'antd';
 import { 
   RobotOutlined, 
   UserOutlined, 
@@ -69,7 +69,8 @@ export default function AiDataExplorerPage() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [geminiKey, setGeminiKey] = useState('');
+  const [aiKey, setAiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'mistral'>('gemini');
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,15 +79,22 @@ export default function AiDataExplorerPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Load Gemini key from localStorage on mount
+  // Load key & provider from localStorage on mount
   useEffect(() => {
-    const savedKey = localStorage.getItem('erdi_gemini_key') || '';
-    setGeminiKey(savedKey);
+    const savedKey = localStorage.getItem('erdi_ai_key') || '';
+    const savedProvider = (localStorage.getItem('erdi_ai_provider') || 'gemini') as 'gemini' | 'mistral';
+    setAiKey(savedKey);
+    setAiProvider(savedProvider);
   }, []);
 
   const handleSaveKey = (key: string) => {
-    setGeminiKey(key);
-    localStorage.setItem('erdi_gemini_key', key);
+    setAiKey(key);
+    localStorage.setItem('erdi_ai_key', key);
+  };
+
+  const handleSaveProvider = (provider: 'gemini' | 'mistral') => {
+    setAiProvider(provider);
+    localStorage.setItem('erdi_ai_provider', provider);
   };
 
   const handleSend = async (text: string) => {
@@ -108,7 +116,8 @@ export default function AiDataExplorerPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ sender: m.sender, content: m.content })),
-          apiKey: geminiKey
+          apiKey: aiKey,
+          apiProvider: aiProvider
         })
       });
 
@@ -372,16 +381,34 @@ export default function AiDataExplorerPage() {
           <Card title="AI Copilot Configuration" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
-                Optionally insert a Gemini API Key to enable semantic narrative summaries of generated tables and charts. If omitted, the assistant resolves everything locally.
+                Select your preferred AI model provider and insert a free API Key to enable structured narrative summaries of your custom dashboards.
               </p>
-              <Input.Password
-                placeholder="Insert Gemini API Key..."
-                value={geminiKey}
-                onChange={e => handleSaveKey(e.target.value)}
-                style={{ borderRadius: '6px' }}
-              />
-              {geminiKey ? (
-                <Badge status="success" text="Gemini API Connected" style={{ fontSize: '12px' }} />
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>Provider</span>
+                <Select
+                  value={aiProvider}
+                  onChange={(val) => handleSaveProvider(val)}
+                  style={{ width: '100%' }}
+                  options={[
+                    { value: 'gemini', label: 'Gemini (Google)' },
+                    { value: 'mistral', label: 'Mistral AI' }
+                  ]}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>API Key</span>
+                <Input.Password
+                  placeholder={`Insert ${aiProvider === 'gemini' ? 'Gemini' : 'Mistral'} API Key...`}
+                  value={aiKey}
+                  onChange={e => handleSaveKey(e.target.value)}
+                  style={{ borderRadius: '6px' }}
+                />
+              </div>
+
+              {aiKey ? (
+                <Badge status="success" text={`${aiProvider === 'gemini' ? 'Gemini' : 'Mistral'} Connected`} style={{ fontSize: '12px' }} />
               ) : (
                 <Badge status="default" text="Running Offline Local Solver" style={{ fontSize: '12px' }} />
               )}

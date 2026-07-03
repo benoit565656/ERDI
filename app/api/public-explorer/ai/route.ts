@@ -27,14 +27,14 @@ const REGIONAL_FALLBACKS: Record<string, string[]> = {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages, apiKey } = body;
+    const { messages, apiKey, apiProvider } = body;
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Messages are required.' }, { status: 400 });
     }
 
     const lastUserMessage = messages[messages.length - 1].content.toLowerCase().trim();
-    const geminiKey = apiKey || process.env.GEMINI_API_KEY || '';
+    const activeKey = apiKey || (apiProvider === 'mistral' ? process.env.MISTRAL_API_KEY : process.env.GEMINI_API_KEY) || '';
 
     // 1. Check if user prompt is asking to select indicators/countries (conversational dashboard intent)
     // We parse target economies, indicators, and periods from prompt
@@ -256,28 +256,52 @@ export async function POST(req: Request) {
       summaryText += `\n\n${derivedMessage}`;
     }
 
-    if (geminiKey) {
+    if (activeKey) {
       try {
         const systemPrompt = `You are a professional economics analyst assistant. Summarize the following data points in a conversational, structured, and insightful manner (approx 120-150 words). Include highlights on trends, highest peak points, and potential structural breaks.
 Data: ${JSON.stringify(processedData)}`;
 
-        const geminiRes = await fetch(`${GEMINI_API_URL}?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }]
-          })
-        });
+        if (apiProvider === 'mistral') {
+          // Call Mistral API
+          const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${activeKey}`
+            },
+            body: JSON.stringify({
+              model: 'open-mistral-7b',
+              messages: [{ role: 'user', content: systemPrompt }]
+            })
+          });
 
-        if (geminiRes.ok) {
-          const resJson = await geminiRes.json();
-          const parsedText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (parsedText) {
-            summaryText = parsedText;
+          if (mistralRes.ok) {
+            const resJson = await mistralRes.json();
+            const parsedText = resJson.choices?.[0]?.message?.content;
+            if (parsedText) {
+              summaryText = parsedText;
+            }
+          }
+        } else {
+          // Call Gemini API
+          const geminiRes = await fetch(`${GEMINI_API_URL}?key=${activeKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemPrompt }] }]
+            })
+          });
+
+          if (geminiRes.ok) {
+            const resJson = await geminiRes.json();
+            const parsedText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (parsedText) {
+              summaryText = parsedText;
+            }
           }
         }
-      } catch (geminiError) {
-        console.error('Gemini API call failed:', geminiError);
+      } catch (apiError) {
+        console.error('AI API call failed:', apiError);
       }
     }
 
