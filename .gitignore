@@ -6,4 +6,7 @@ db_data/
 *.log
 .next/
 *.tsbuildinfo
+*.dump
+prisma/*.db
+prisma/*.db-journal
 

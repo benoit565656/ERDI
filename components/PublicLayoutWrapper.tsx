@@ -77,6 +77,12 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
                   </Link>
                   <div className="separator-nav"></div>
 
+                  <Link href="/ai-data-explorer" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                    <img loading="lazy" src="/images/chart-bar.svg" alt="AI Data Explorer" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px', filter: 'hue-rotate(240deg)' }} />
+                    <div className="text-block" style={{ fontWeight: 600, color: '#155dfc' }}>AI Data Explorer</div>
+                  </Link>
+                  <div className="separator-nav"></div>
+
                   <Link href="/indicators" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/search.svg" alt="Indicators" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Indicators</div>
@@ -158,6 +164,7 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
               <div className="title-footer">LINKS</div>
               <a href="/index.html" className="link-footer">Home</a>
               <Link href="/data-explorer" className="link-footer data">Data Explorer</Link>
+              <Link href="/ai-data-explorer" className="link-footer data">AI Data Explorer</Link>
               <Link href="/indicators" className="link-footer">Indicators</Link>
               <Link href="/country-outlook" className="link-footer">Country Outlook</Link>
               <a href="/knowledge-hub.html" className="link-footer">Knowledge Hub</a>
