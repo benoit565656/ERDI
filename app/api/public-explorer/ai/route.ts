@@ -16,6 +16,17 @@ try {
   console.error('Failed to load indicator knowledge JSON:', e);
 }
 
+// Load compiled machine-learned data profiles
+let dataProfiles: any = { indicatorProfiles: {}, correlationMatrix: {} };
+try {
+  const jsonPath = path.resolve(process.cwd(), 'app/data-explorer/data_profiles.json');
+  if (fs.existsSync(jsonPath)) {
+    dataProfiles = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  }
+} catch (e) {
+  console.error('Failed to load data profiles JSON:', e);
+}
+
 // Fallback regional definitions if database definitions are incomplete
 const REGIONAL_FALLBACKS: Record<string, string[]> = {
   'southeast asia': ['ARM', 'AZE', 'BGD', 'BRU', 'CAM', 'GEO', 'IND', 'INA', 'LAO', 'MAL', 'MYA', 'PHI', 'SIN', 'THA', 'VIE'], // standard ASEAN + some available economies in database
@@ -27,14 +38,17 @@ const REGIONAL_FALLBACKS: Record<string, string[]> = {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages, apiKey, apiProvider } = body;
+    const { messages } = body;
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Messages are required.' }, { status: 400 });
     }
 
     const lastUserMessage = messages[messages.length - 1].content.toLowerCase().trim();
-    const activeKey = apiKey || (apiProvider === 'mistral' ? process.env.MISTRAL_API_KEY : process.env.GEMINI_API_KEY) || '';
+    
+    // API keys are securely resolved on the backend (Vercel env)
+    const apiProvider = process.env.MISTRAL_API_KEY ? 'mistral' : 'gemini';
+    const activeKey = (apiProvider === 'mistral' ? process.env.MISTRAL_API_KEY : process.env.GEMINI_API_KEY) || '';
 
     // 1. Check if user prompt is asking to select indicators/countries (conversational dashboard intent)
     // We parse target economies, indicators, and periods from prompt
@@ -258,7 +272,19 @@ export async function POST(req: Request) {
 
     if (activeKey) {
       try {
+        const profile = dataProfiles.indicatorProfiles[targetIndicators[0]] || null;
+        let profileContext = '';
+        if (profile) {
+          profileContext = `Learned Historical Profile & Outliers for ${targetIndicators[0]}:
+- Overall historical average across countries: ${profile.average}
+- Overall minimum: ${profile.min.value} in ${profile.min.economy} (${profile.min.year})
+- Overall maximum: ${profile.max.value} in ${profile.max.economy} (${profile.max.year})
+- Historical outlier events identified: ${JSON.stringify(profile.outliers || [])}
+`;
+        }
+
         const systemPrompt = `You are a professional economics analyst assistant. Summarize the following data points in a conversational, structured, and insightful manner (approx 120-150 words). Include highlights on trends, highest peak points, and potential structural breaks.
+${profileContext}
 Data: ${JSON.stringify(processedData)}`;
 
         if (apiProvider === 'mistral') {

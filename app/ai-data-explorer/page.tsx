@@ -69,8 +69,6 @@ export default function AiDataExplorerPage() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [aiKey, setAiKey] = useState('');
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'mistral'>('gemini');
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,24 +76,6 @@ export default function AiDataExplorerPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
-
-  // Load key & provider from localStorage on mount
-  useEffect(() => {
-    const savedKey = localStorage.getItem('erdi_ai_key') || '';
-    const savedProvider = (localStorage.getItem('erdi_ai_provider') || 'gemini') as 'gemini' | 'mistral';
-    setAiKey(savedKey);
-    setAiProvider(savedProvider);
-  }, []);
-
-  const handleSaveKey = (key: string) => {
-    setAiKey(key);
-    localStorage.setItem('erdi_ai_key', key);
-  };
-
-  const handleSaveProvider = (provider: 'gemini' | 'mistral') => {
-    setAiProvider(provider);
-    localStorage.setItem('erdi_ai_provider', provider);
-  };
 
   const handleSend = async (text: string) => {
     if (!text.trim()) return;
@@ -115,9 +95,7 @@ export default function AiDataExplorerPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map(m => ({ sender: m.sender, content: m.content })),
-          apiKey: aiKey,
-          apiProvider: aiProvider
+          messages: [...messages, userMsg].map(m => ({ sender: m.sender, content: m.content }))
         })
       });
 
@@ -194,8 +172,21 @@ export default function AiDataExplorerPage() {
         <div style={{ flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Card style={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
             
+            {/* Input Bar */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <Input
+                placeholder="Ask me a question (e.g. 'most relevant indicators for Philippines')..."
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onPressEnter={() => handleSend(inputValue)}
+                disabled={loading}
+                style={{ borderRadius: '6px', height: '40px' }}
+                suffix={<SendOutlined style={{ color: inputValue ? '#2563eb' : '#94a3b8', cursor: 'pointer' }} onClick={() => handleSend(inputValue)} />}
+              />
+            </div>
+
             {/* Messages Log */}
-            <div style={{ height: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', paddingRight: '8px', marginBottom: '20px' }}>
+            <div style={{ height: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', paddingRight: '8px' }}>
               {messages.map(msg => (
                 <div 
                   key={msg.id} 
@@ -357,63 +348,11 @@ export default function AiDataExplorerPage() {
               
               <div ref={chatEndRef} />
             </div>
-
-            {/* Input Bar */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Input
-                placeholder="Ask me a question (e.g. 'most relevant indicators for Philippines')..."
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
-                onPressEnter={() => handleSend(inputValue)}
-                disabled={loading}
-                style={{ borderRadius: '6px' }}
-                suffix={<SendOutlined style={{ color: inputValue ? '#2563eb' : '#94a3b8', cursor: 'pointer' }} onClick={() => handleSend(inputValue)} />}
-              />
-            </div>
-
           </Card>
         </div>
 
         {/* CONTROLS & SUGGESTIONS - Right/Sidebar Column */}
         <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* AI Settings / Keys */}
-          <Card title="AI Copilot Configuration" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
-                Select your preferred AI model provider and insert a free API Key to enable structured narrative summaries of your custom dashboards.
-              </p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>Provider</span>
-                <Select
-                  value={aiProvider}
-                  onChange={(val) => handleSaveProvider(val)}
-                  style={{ width: '100%' }}
-                  options={[
-                    { value: 'gemini', label: 'Gemini (Google)' },
-                    { value: 'mistral', label: 'Mistral AI' }
-                  ]}
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>API Key</span>
-                <Input.Password
-                  placeholder={`Insert ${aiProvider === 'gemini' ? 'Gemini' : 'Mistral'} API Key...`}
-                  value={aiKey}
-                  onChange={e => handleSaveKey(e.target.value)}
-                  style={{ borderRadius: '6px' }}
-                />
-              </div>
-
-              {aiKey ? (
-                <Badge status="success" text={`${aiProvider === 'gemini' ? 'Gemini' : 'Mistral'} Connected`} style={{ fontSize: '12px' }} />
-              ) : (
-                <Badge status="default" text="Running Offline Local Solver" style={{ fontSize: '12px' }} />
-              )}
-            </div>
-          </Card>
 
           {/* Quick Suggestions Chips */}
           <Card title="Quick Suggestions" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
