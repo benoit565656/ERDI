@@ -164,7 +164,7 @@ export default function AiDataExplorerPage() {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '104px 20px 40px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
       
       {/* HEADER SECTION */}
       <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', borderRadius: '16px', padding: '40px', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>

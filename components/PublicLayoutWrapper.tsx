@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 export default function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const isFullWidthPage = pathname === '/data-explorer' || pathname === '/indicators' || pathname === '/country-outlook' || pathname === '/api-docs' || pathname === '/api';
+  const isFullWidthPage = pathname === '/data-explorer' || pathname === '/ai-data-explorer' || pathname === '/indicators' || pathname === '/country-outlook' || pathname === '/api-docs' || pathname === '/api';
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -71,15 +71,15 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
               <nav role="navigation" className={`nav-menu w-nav-menu ${mobileMenuOpen ? 'w--open' : ''}`} style={mobileMenuOpen ? { display: 'block', transform: 'translateX(0px)', transition: 'transform 400ms ease 0s' } : { display: 'flex', alignItems: 'center' }}>
                 <div className="nav-links" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row', flexWrap: 'nowrap', gap: '8px' }}>
                   
-                  <Link href="/data-explorer" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <Link href="/data-explorer" className={`link-navigation w-inline-block ${pathname === '/data-explorer' ? 'w--current' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/chart-bar.svg" alt="Data Explorer" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px' }} />
                     <div className="text-block">Data Explorer</div>
                   </Link>
                   <div className="separator-nav"></div>
 
-                  <Link href="/ai-data-explorer" className="link-navigation w-inline-block" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <Link href="/ai-data-explorer" className={`link-navigation w-inline-block ${pathname === '/ai-data-explorer' ? 'w--current' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                     <img loading="lazy" src="/images/chart-bar.svg" alt="AI Data Explorer" className="image-3" width="25" height="25" style={{ width: '25px', height: '25px', filter: 'hue-rotate(240deg)' }} />
-                    <div className="text-block" style={{ fontWeight: 600, color: '#155dfc' }}>AI Data Explorer</div>
+                    <div className="text-block">AI Data Explorer</div>
                   </Link>
                   <div className="separator-nav"></div>
 
