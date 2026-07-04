@@ -30,7 +30,7 @@ interface Message {
   id: string;
   sender: 'user' | 'ai';
   content: string;
-  type?: 'text' | 'clarification' | 'dashboard';
+  type?: 'text' | 'clarification' | 'dashboard' | 'report';
   options?: Array<{ code: string; name: string; description?: string }>;
   dashboardData?: {
     indicatorCode: string;
@@ -47,6 +47,28 @@ interface Message {
       indicatorName: string;
       obsValue: number | null;
       unit: string;
+    }>;
+  };
+  reportData?: {
+    economyCode: string;
+    economyName: string;
+    periods: string[];
+    reportData: Record<string, {
+      code: string;
+      name: string;
+      category: string;
+      unit: string;
+      data: Array<{
+        period: string;
+        obsValue: number | null;
+        economyCode: string;
+        economyName: string;
+        indicatorCode: string;
+        indicatorName: string;
+        unit: string;
+      }>;
+      latestValue: number | null;
+      latestYear: string | null;
     }>;
   };
 }
@@ -121,6 +143,14 @@ export default function AiDataExplorerPage() {
           content: resData.summary,
           dashboardData: resData.dashboard
         }]);
+      } else if (resData.type === 'report') {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          sender: 'ai',
+          type: 'report',
+          content: resData.summary,
+          reportData: resData.report
+        }]);
       } else {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
@@ -149,9 +179,8 @@ export default function AiDataExplorerPage() {
     const periods = dbData.periods.join(',');
     window.location.href = `/data-explorer?indicator=${inds}&economy=${ecos}&period=${periods}`;
   };
-
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '104px 20px 40px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '104px 20px 40px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
       
       {/* HEADER SECTION */}
       <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', borderRadius: '16px', padding: '40px', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
@@ -166,27 +195,44 @@ export default function AiDataExplorerPage() {
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      {/* QUICK SUGGESTIONS ROW */}
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569', alignSelf: 'center', marginRight: '5px' }}>Try asking:</span>
+        {SUGGESTIONS.map((s, idx) => (
+          <Button
+            key={idx}
+            type="default"
+            shape="round"
+            onClick={() => handleSend(s)}
+            disabled={loading}
+            style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', fontSize: '13px', color: '#334155' }}
+          >
+            {s}
+          </Button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: '30px', flexDirection: 'column' }}>
         
         {/* CHAT INTERFACE - Left/Main Column */}
-        <div style={{ flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Card style={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
             
             {/* Input Bar */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
               <Input
-                placeholder="Ask me a question (e.g. 'most relevant indicators for Philippines')..."
+                placeholder="Ask me a question (e.g. 'most relevant indicators for Philippines' or 'give me a report about the economy in Philippines')..."
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onPressEnter={() => handleSend(inputValue)}
                 disabled={loading}
-                style={{ borderRadius: '6px', height: '40px' }}
-                suffix={<SendOutlined style={{ color: inputValue ? '#2563eb' : '#94a3b8', cursor: 'pointer' }} onClick={() => handleSend(inputValue)} />}
+                style={{ borderRadius: '6px', height: '44px', fontSize: '15px' }}
+                suffix={<SendOutlined style={{ color: inputValue ? '#2563eb' : '#94a3b8', cursor: 'pointer', fontSize: '18px' }} onClick={() => handleSend(inputValue)} />}
               />
             </div>
 
-            {/* Messages Log */}
-            <div style={{ height: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', paddingRight: '8px' }}>
+            {/* Messages Log - Dynamic Height, No Scrollbar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {messages.map(msg => (
                 <div 
                   key={msg.id} 
@@ -318,9 +364,92 @@ export default function AiDataExplorerPage() {
                           pagination={{ pageSize: 5 }}
                           size="small"
                           bordered
-                          style={{ background: '#ffffff', borderRadius: '8px', overflow: 'hidden' }}
                         />
                       </Card>
+                    )}
+
+                    {/* Multi-Indicator Report Rendering Panel */}
+                    {msg.type === 'report' && msg.reportData && (
+                      <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '25px', width: '100%' }}>
+                        {['Demographics', 'Economy & Growth'].map(catName => {
+                          const catIndicators = Object.values(msg.reportData!.reportData).filter(ind => ind.category === catName);
+                          if (catIndicators.length === 0) return null;
+
+                          return (
+                            <div key={catName} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#1e3a8a', borderLeft: '4px solid #2563eb', paddingLeft: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {catName}
+                              </h3>
+                              
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                                {catIndicators.map(ind => {
+                                  const formattedVal = ind.latestValue !== null ? ind.latestValue.toLocaleString() : '-';
+                                  const isPercent = ind.unit.includes('Percent') || ind.unit.includes('%');
+                                  
+                                  return (
+                                    <Card
+                                      key={ind.code}
+                                      size="small"
+                                      style={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', background: '#ffffff' }}
+                                      bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
+                                    >
+                                      <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                          {ind.name}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
+                                          <span style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
+                                            {formattedVal}{isPercent ? '%' : ` ${ind.unit}`}
+                                          </span>
+                                          {ind.latestYear && (
+                                            <span style={{ fontSize: '11px', color: '#64748b' }}>({ind.latestYear})</span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Sparkline chart */}
+                                      <div style={{ height: '70px', width: '100%', marginBottom: '10px' }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <LineChart data={ind.data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+                                            <Tooltip contentStyle={{ borderRadius: 6, fontSize: '11px' }} />
+                                            <Line
+                                              type="monotone"
+                                              dataKey="obsValue"
+                                              stroke="#2563eb"
+                                              strokeWidth={2.5}
+                                              dot={false}
+                                            />
+                                          </LineChart>
+                                        </ResponsiveContainer>
+                                      </div>
+
+                                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Button
+                                          type="link"
+                                          size="small"
+                                          icon={<CompassOutlined />}
+                                          onClick={() => handleApplyToExplorer({
+                                            indicatorCode: ind.code,
+                                            indicatorName: ind.name,
+                                            economies: [msg.reportData!.economyCode],
+                                            periods: msg.reportData!.periods,
+                                            isGroup: false,
+                                            groupName: '',
+                                            data: ind.data
+                                          })}
+                                          style={{ padding: 0, fontSize: '12px', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                          Apply to Explorer
+                                        </Button>
+                                      </div>
+                                    </Card>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
 
@@ -349,39 +478,6 @@ export default function AiDataExplorerPage() {
               <div ref={chatEndRef} />
             </div>
           </Card>
-        </div>
-
-        {/* CONTROLS & SUGGESTIONS - Right/Sidebar Column */}
-        <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* Quick Suggestions Chips */}
-          <Card title="Quick Suggestions" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {SUGGESTIONS.map((s, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSend(s)}
-                  disabled={loading}
-                  style={{
-                    textAlign: 'left',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                    fontSize: '12.5px',
-                    color: '#334155',
-                    lineHeight: '1.4',
-                    transition: 'all 0.2s'
-                  }}
-                  className="hover-card"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </Card>
-
         </div>
 
       </div>

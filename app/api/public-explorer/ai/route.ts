@@ -121,20 +121,139 @@ export async function POST(req: Request) {
       targetEconomies = ['PHI'];
     }
 
-    // Resolve Indicators
-    let targetIndicators: string[] = [];
-    if (resolvedIndicator) {
-      targetIndicators = [resolvedIndicator];
-    } else {
-      // Default to GDP growth NY_GDP_MKTP_KD_ZG or total GDP NY_GDP_MKTP_CD
-      targetIndicators = ['NY_GDP_MKTP_KD_ZG'];
-    }
+    let economyName = 'Philippines';
+    const ecoDb = await prisma.economy.findFirst({
+      where: { code: targetEconomies[0] },
+      select: { name: true }
+    });
+    if (ecoDb) economyName = ecoDb.name;
 
     // Resolve Periods
     let periods = resolvedPeriods;
     if (periods.length === 0) {
       // Default to last 10 periods
       periods = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+    }
+
+    const isReportRequest = lastUserMessage.includes('report') || lastUserMessage.includes('dashboard') || lastUserMessage.includes('economy') || lastUserMessage.includes('outlook') || (!resolvedIndicator && resolvedEconomy);
+
+    if (isReportRequest) {
+      const reportIndicators = [
+        { code: 'LP_PE_NUM_MOP', name: 'Total Population', category: 'Demographics', unit: 'Million' },
+        { code: 'LP_MOP_PTX_PS', name: 'Population growth rate', category: 'Demographics', unit: 'Percent (%)' },
+        { code: 'LLF_PE_NUM', name: 'Labor Force', category: 'Demographics', unit: 'Million' },
+        { code: 'NGDP_XDC', name: 'GDP at current prices', category: 'Economy & Growth', unit: 'Trillion' },
+        { code: 'NGDPR_GR', name: 'GDP Growth Rate', category: 'Economy & Growth', unit: 'Percent (%)' },
+        { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', unit: 'Percent (%)' }
+      ];
+
+      const observations = await prisma.observation.findMany({
+        where: {
+          indicatorCode: { in: reportIndicators.map(r => r.code) },
+          economyCode: { in: targetEconomies },
+          period: { in: periods },
+          isPublished: true,
+          deletedAt: null
+        },
+        select: {
+          indicatorCode: true,
+          economyCode: true,
+          period: true,
+          obsValue: true
+        }
+      });
+
+      const reportData: Record<string, any> = {};
+      for (const repInd of reportIndicators) {
+        const indObs = observations.filter(o => o.indicatorCode === repInd.code);
+        if (indObs.length === 0) continue;
+        
+        const sortedObs = indObs.map(obs => ({
+          period: obs.period,
+          obsValue: obs.obsValue ? Number(Number(obs.obsValue).toFixed(4)) : null,
+          economyCode: obs.economyCode,
+          economyName: economyName,
+          indicatorCode: obs.indicatorCode,
+          indicatorName: repInd.name,
+          unit: repInd.unit
+        })).sort((a, b) => Number(a.period) - Number(b.period));
+
+        const latest = sortedObs[sortedObs.length - 1];
+        
+        reportData[repInd.code] = {
+          code: repInd.code,
+          name: repInd.name,
+          category: repInd.category,
+          unit: repInd.unit,
+          data: sortedObs,
+          latestValue: latest ? latest.obsValue : null,
+          latestYear: latest ? latest.period : null
+        };
+      }
+
+      let summaryText = `Here is the comprehensive multi-indicator economic and demographic dashboard report for **${economyName.toUpperCase()}** from ${periods[0]} to ${periods[periods.length - 1]}.`;
+      if (activeKey) {
+        try {
+          const systemPrompt = `You are a professional economics analyst assistant. Summarize the following multi-indicator economic and demographic report for ${economyName} in a conversational, structured, and insightful manner (approx 120-150 words). Highlight structural trends, population patterns, inflation rates, and GDP performance.
+Report Data: ${JSON.stringify(reportData)}`;
+
+          if (apiProvider === 'mistral') {
+            const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${activeKey}`
+              },
+              body: JSON.stringify({
+                model: 'open-mistral-7b',
+                messages: [{ role: 'user', content: systemPrompt }]
+              })
+            });
+
+            if (mistralRes.ok) {
+              const resJson = await mistralRes.json();
+              const parsedText = resJson.choices?.[0]?.message?.content;
+              if (parsedText) summaryText = parsedText;
+            }
+          } else {
+            const geminiRes = await fetch(`${GEMINI_API_URL}?key=${activeKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: systemPrompt }] }]
+              })
+            });
+
+            if (geminiRes.ok) {
+              const resJson = await geminiRes.json();
+              const parsedText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (parsedText) summaryText = parsedText;
+            }
+          }
+        } catch (err) {
+          console.error('Narrative summary generation failed:', err);
+        }
+      }
+
+      return NextResponse.json({
+        type: 'report',
+        summary: summaryText,
+        report: {
+          economyCode: targetEconomies[0],
+          economyName: economyName,
+          periods: periods,
+          reportData: reportData
+        }
+      });
+    }
+
+    // Single Indicator Flow
+    let targetIndicators: string[] = [];
+    if (resolvedIndicator) {
+      targetIndicators = [resolvedIndicator];
+    } else {
+      // Default to GDP Growth Rate
+      targetIndicators = ['NGDPR_GR'];
     }
 
     // 2. Fetch observations
@@ -150,18 +269,15 @@ export async function POST(req: Request) {
         indicatorCode: true,
         economyCode: true,
         period: true,
-        obsValue: true,
-        unitCode: true,
-        unitMultCode: true
+        obsValue: true
       }
     });
 
-    // 3. Process Dynamic calculations (Custom regional aggregations and derived indicators)
+    // 3. Process Dynamic calculations
     let processedData: any[] = [];
     const kb = indicatorKnowledge[targetIndicators[0]] || { name: 'Indicator', aggregation: 'SUM', unit: 'index' };
 
     if (isGroupAggregation) {
-      // Aggregate Southeast Asia or custom region values
       const periodGroups: Record<string, any[]> = {};
       observations.forEach(obs => {
         if (!periodGroups[obs.period]) periodGroups[obs.period] = [];
@@ -174,17 +290,13 @@ export async function POST(req: Request) {
 
         let aggregatedValue = null;
         if (kb.aggregation === 'SUM') {
-          // Sum up values
           let sum = 0;
           periodObs.forEach(o => {
             if (o.obsValue) sum += Number(o.obsValue);
           });
           aggregatedValue = sum;
         } else {
-          // Weighted average (e.g. GDP growth weighted by Nominal GDP, or inflation weighted by Population)
-          const weightInd = kb.weight || 'NY_GDP_MKTP_CD';
-          
-          // Fetch weights for all members for this year
+          const weightInd = kb.weight || 'LP_PE_NUM_MOP';
           const weightObs = await prisma.observation.findMany({
             where: {
               indicatorCode: weightInd,
@@ -195,12 +307,11 @@ export async function POST(req: Request) {
           });
 
           const weightMap = new Map(weightObs.map(w => [w.economyCode, Number(w.obsValue || 0)]));
-          
           let totalWeight = 0;
           let weightedSum = 0;
 
           periodObs.forEach(o => {
-            const w = weightMap.get(o.economyCode) || 1; // fallback weight is 1
+            const w = weightMap.get(o.economyCode) || 1;
             if (o.obsValue) {
               weightedSum += Number(o.obsValue) * w;
               totalWeight += w;
@@ -221,7 +332,6 @@ export async function POST(req: Request) {
         });
       }
     } else {
-      // Single Country mapping
       const economyNames = await prisma.economy.findMany({
         where: { code: { in: targetEconomies } },
         select: { code: true, name: true }
@@ -240,11 +350,9 @@ export async function POST(req: Request) {
     }
 
     // 4. Check if Derived Indicator logic applies
-    // If the user asked for "population growth" but we only processed "total population"
     let derivedMessage = '';
     const isGrowthRequest = lastUserMessage.includes('growth') || lastUserMessage.includes('increase') || lastUserMessage.includes('change');
-    if (isGrowthRequest && targetIndicators[0] === 'SP_POP_TOTL') {
-      // Calculate growth rate dynamically!
+    if (isGrowthRequest && targetIndicators[0] === 'LP_PE_NUM_MOP') {
       const growthData: any[] = [];
       for (let i = 1; i < processedData.length; i++) {
         const prev = processedData[i - 1].obsValue;
@@ -253,7 +361,7 @@ export async function POST(req: Request) {
           const rate = ((curr - prev) / prev) * 100;
           growthData.push({
             ...processedData[i],
-            indicatorCode: 'SP_POP_GROW_DERIVED',
+            indicatorCode: 'LP_MOP_PTX_PS',
             indicatorName: 'Population Growth Rate (AI Calculated)',
             obsValue: Number(rate.toFixed(4)),
             unit: 'Percent (%)'
@@ -264,7 +372,7 @@ export async function POST(req: Request) {
       derivedMessage = 'Note: The database did not contain a pre-computed Population Growth indicator, so I dynamically calculated the annual population growth rate (%) from the total population series.';
     }
 
-    // Call Gemini API if key is present to generate a narrative summary, otherwise synthesize locally
+    // Call Gemini/Mistral API
     let summaryText = `Here is the custom generated dashboard for **${kb.name}** in **${resolvedGroup ? groupName.toUpperCase() : resolvedEconomy ? resolvedEconomy.toUpperCase() : 'PHILIPPINES'}** from ${periods[0]} to ${periods[periods.length - 1]}.`;
     if (derivedMessage) {
       summaryText += `\n\n${derivedMessage}`;
@@ -288,7 +396,6 @@ ${profileContext}
 Data: ${JSON.stringify(processedData)}`;
 
         if (apiProvider === 'mistral') {
-          // Call Mistral API
           const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -304,12 +411,9 @@ Data: ${JSON.stringify(processedData)}`;
           if (mistralRes.ok) {
             const resJson = await mistralRes.json();
             const parsedText = resJson.choices?.[0]?.message?.content;
-            if (parsedText) {
-              summaryText = parsedText;
-            }
+            if (parsedText) summaryText = parsedText;
           }
         } else {
-          // Call Gemini API
           const geminiRes = await fetch(`${GEMINI_API_URL}?key=${activeKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -321,9 +425,7 @@ Data: ${JSON.stringify(processedData)}`;
           if (geminiRes.ok) {
             const resJson = await geminiRes.json();
             const parsedText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (parsedText) {
-              summaryText = parsedText;
-            }
+            if (parsedText) summaryText = parsedText;
           }
         }
       } catch (apiError) {
@@ -391,42 +493,38 @@ async function resolveQueryParameters(prompt: string) {
   let requiresClarification = false;
   let matchedIndicators: any[] = [];
 
-  // Search local indicator knowledge
-  const matches: any[] = [];
-  if (prompt.includes('gdp') || prompt.includes('gross domestic product')) {
-    // Collect all GDP indicators
-    for (const [code, info] of Object.entries(indicatorKnowledge)) {
-      if (info.name.toLowerCase().includes('gdp') || info.name.toLowerCase().includes('gross domestic product')) {
-        matches.push(info);
-      }
-    }
-  } else if (prompt.includes('population') || prompt.includes('people')) {
-    // Collect all population indicators
-    for (const [code, info] of Object.entries(indicatorKnowledge)) {
-      if (info.name.toLowerCase().includes('population')) {
-        matches.push(info);
-      }
-    }
-  } else if (prompt.includes('inflation') || prompt.includes('price')) {
-    // Collect all inflation indicators
-    for (const [code, info] of Object.entries(indicatorKnowledge)) {
-      if (info.name.toLowerCase().includes('inflation') || info.name.toLowerCase().includes('cpi') || info.name.toLowerCase().includes('price')) {
-        matches.push(info);
-      }
-    }
-  }
-
-  if (matches.length > 1) {
-    // If the user already selected one specifically in their response (e.g. by code or exact name)
-    const exactMatch = matches.find(m => prompt.includes(m.code.toLowerCase()) || prompt.includes(m.name.toLowerCase()));
-    if (exactMatch) {
-      resolvedIndicator = exactMatch.code;
+  // Map to core KIDB indicator codes
+  if (prompt.includes('gdp growth') || prompt.includes('economic growth')) {
+    resolvedIndicator = 'NGDPR_GR';
+  } else if (prompt.includes('gdp') || prompt.includes('gross domestic product')) {
+    // If they ask for constant price specifically
+    if (prompt.includes('constant')) {
+      resolvedIndicator = 'NGDP_R_XDC';
     } else {
-      requiresClarification = true;
-      matchedIndicators = matches.slice(0, 5); // return top 5 options
+      resolvedIndicator = 'NGDP_XDC';
     }
-  } else if (matches.length === 1) {
-    resolvedIndicator = matches[0].code;
+  } else if (prompt.includes('population growth')) {
+    resolvedIndicator = 'LP_MOP_PTX_PS';
+  } else if (prompt.includes('population')) {
+    resolvedIndicator = 'LP_PE_NUM_MOP';
+  } else if (prompt.includes('inflation') || prompt.includes('cpi')) {
+    resolvedIndicator = 'CPI_PC';
+  } else if (prompt.includes('labor force') || prompt.includes('employment')) {
+    resolvedIndicator = 'LLF_PE_NUM';
+  } else {
+    // Fallback search in indicator knowledge
+    const matches: any[] = [];
+    for (const [code, info] of Object.entries(indicatorKnowledge)) {
+      if (prompt.includes(info.name.toLowerCase()) || prompt.includes(code.toLowerCase())) {
+        matches.push(info);
+      }
+    }
+    if (matches.length > 1) {
+      requiresClarification = true;
+      matchedIndicators = matches.slice(0, 5);
+    } else if (matches.length === 1) {
+      resolvedIndicator = matches[0].code;
+    }
   }
 
   return {
