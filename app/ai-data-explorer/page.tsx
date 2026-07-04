@@ -23,7 +23,10 @@ import {
   YAxis, 
   Tooltip, 
   Legend, 
-  CartesianGrid 
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 
 interface Message {
@@ -375,14 +378,163 @@ export default function AiDataExplorerPage() {
                           const catIndicators = Object.values(msg.reportData!.reportData).filter(ind => ind.category === catName);
                           if (catIndicators.length === 0) return null;
 
+                          const hasSectoral = catName === 'Economy & Growth' && 
+                            msg.reportData!.reportData['NGDPSO_AGR_XGDP_PS'] && 
+                            msg.reportData!.reportData['NGDPSO_IND_XGDP_PS'] && 
+                            msg.reportData!.reportData['NGDPSO_SER_XGDP_PS'];
+
+                          const agrObj = hasSectoral ? msg.reportData!.reportData['NGDPSO_AGR_XGDP_PS'] : null;
+                          const indObj = hasSectoral ? msg.reportData!.reportData['NGDPSO_IND_XGDP_PS'] : null;
+                          const serObj = hasSectoral ? msg.reportData!.reportData['NGDPSO_SER_XGDP_PS'] : null;
+
+                          const year = agrObj?.latestYear || 'Latest';
+                          const pieData = hasSectoral && agrObj && indObj && serObj ? [
+                            { name: 'Agriculture', value: Number(agrObj.latestValue) || 0, color: '#10b981' },
+                            { name: 'Industry', value: Number(indObj.latestValue) || 0, color: '#f59e0b' },
+                            { name: 'Services', value: Number(serObj.latestValue) || 0, color: '#3b82f6' }
+                          ] : [];
+
+                          const filteredIndicators = catIndicators.filter(ind => 
+                            !['NGDPSO_AGR_XGDP_PS', 'NGDPSO_IND_XGDP_PS', 'NGDPSO_SER_XGDP_PS'].includes(ind.code)
+                          );
+
                           return (
                             <div key={catName} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#1e3a8a', borderLeft: '4px solid #2563eb', paddingLeft: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 {catName}
                               </h3>
+
+                              {hasSectoral && pieData.length > 0 && serObj && (
+                                <div 
+                                  style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: '1fr 300px', 
+                                    gap: '20px', 
+                                    alignItems: 'stretch',
+                                    width: '100%',
+                                    marginBottom: '10px'
+                                  }}
+                                >
+                                  {/* Left Card: Sectoral Pie Chart */}
+                                  <Card
+                                    size="small"
+                                    style={{ 
+                                      borderRadius: '12px', 
+                                      border: '1px solid #e2e8f0', 
+                                      boxShadow: '0 1px 3px rgba(0,0,0,0.01)', 
+                                      background: '#ffffff',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      height: '100%'
+                                    }}
+                                    bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}
+                                  >
+                                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px', letterSpacing: '0.3px' }}>
+                                      Sectoral GDP Structure ({year})
+                                    </div>
+                                    <div style={{ height: '300px', width: '100%', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                          <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={3}
+                                            dataKey="value"
+                                            label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(1)}%)`}
+                                          >
+                                            {pieData.map((entry, index) => (
+                                              <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                          </Pie>
+                                          <Tooltip 
+                                            formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Share of GDP']}
+                                            contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
+                                          />
+                                          <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                        </PieChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                  </Card>
+
+                                  {/* Right Card: Table list callout */}
+                                  <Card
+                                    size="small"
+                                    style={{ 
+                                      borderRadius: '12px', 
+                                      border: '1px solid #dbeafe', 
+                                      boxShadow: '0 2px 4px rgba(37, 99, 235, 0.01)', 
+                                      background: '#eff6ff',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'space-between',
+                                      height: '100%'
+                                    }}
+                                    bodyStyle={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
+                                  >
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        Sectoral GDP Share
+                                      </span>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                                        {pieData.map(sector => (
+                                          <div key={sector.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #dbeafe', paddingBottom: '6px' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: sector.color, display: 'inline-block' }}></span>
+                                              {sector.name}
+                                            </span>
+                                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#1e3a8a' }}>
+                                              {sector.value.toFixed(2)}%
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {year && (
+                                        <div style={{ marginTop: '8px' }}>
+                                          <span style={{ display: 'inline-block', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 600 }}>
+                                            Year: {year}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div style={{ borderTop: '1px solid #dbeafe', paddingTop: '12px', marginTop: '12px' }}>
+                                      <Button
+                                        type="primary"
+                                        size="middle"
+                                        icon={<CompassOutlined />}
+                                        onClick={() => handleApplyToExplorer({
+                                          indicatorCode: 'NGDPSO_SER_XGDP_PS',
+                                          indicatorName: 'Services value-added (% of GDP)',
+                                          economies: [msg.reportData!.economyCode],
+                                          periods: msg.reportData!.periods,
+                                          isGroup: false,
+                                          groupName: '',
+                                          data: serObj.data
+                                        })}
+                                        style={{ 
+                                          width: '100%', 
+                                          background: '#2563eb', 
+                                          border: 'none', 
+                                          borderRadius: '8px', 
+                                          fontSize: '12px', 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          justifyContent: 'center', 
+                                          gap: '6px' 
+                                        }}
+                                      >
+                                        View Sectoral in Explorer
+                                      </Button>
+                                    </div>
+                                  </Card>
+                                </div>
+                              )}
                               
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', width: '100%' }}>
-                                {catIndicators.map(ind => {
+                                {filteredIndicators.map(ind => {
                                   const formattedVal = ind.latestValue !== null ? ind.latestValue.toLocaleString() : '-';
                                   const isPercent = ind.unit.includes('Percent') || ind.unit.includes('%');
                                   
