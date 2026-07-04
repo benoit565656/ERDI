@@ -147,14 +147,20 @@ export async function POST(req: Request) {
         reportIndicators.push(
           { code: 'LP_PE_NUM_MOP', name: 'Total Population', category: 'Demographics' },
           { code: 'LP_MOP_PTX_PS', name: 'Population growth rate', category: 'Demographics', isPercent: true },
-          { code: 'LLF_PE_NUM', name: 'Labor Force', category: 'Demographics' }
+          { code: 'LLF_PE_NUM', name: 'Labor Force', category: 'Demographics' },
+          { code: 'LUR_PT', name: 'Unemployment Rate', category: 'Demographics', isPercent: true }
         );
       }
       if (includeEconomy) {
         reportIndicators.push(
           { code: 'NGDP_XDC', name: 'GDP at current prices', category: 'Economy & Growth' },
           { code: 'NGDPR_GR', name: 'GDP Growth Rate', category: 'Economy & Growth', isPercent: true },
-          { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', isPercent: true }
+          { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', isPercent: true },
+          { code: 'NGDPSO_AGR_XGDP_PS', name: 'Agriculture value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'NGDPSO_IND_XGDP_PS', name: 'Industry value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'NGDPSO_SER_XGDP_PS', name: 'Services value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'BXG_BP6_XGDP_PS', name: 'Exports of Goods and Services (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'BMG_BP6_XGDP_PS', name: 'Imports of Goods and Services (% of GDP)', category: 'Economy & Growth', isPercent: true }
         );
       }
 

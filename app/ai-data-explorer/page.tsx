@@ -381,79 +381,133 @@ export default function AiDataExplorerPage() {
                                 {catName}
                               </h3>
                               
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', width: '100%' }}>
                                 {catIndicators.map(ind => {
                                   const formattedVal = ind.latestValue !== null ? ind.latestValue.toLocaleString() : '-';
                                   const isPercent = ind.unit.includes('Percent') || ind.unit.includes('%');
                                   
                                   return (
-                                    <Card
-                                      key={ind.code}
-                                      size="small"
-                                      style={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', background: '#ffffff' }}
-                                      bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
+                                    <div 
+                                      key={ind.code} 
+                                      style={{ 
+                                        display: 'grid', 
+                                        gridTemplateColumns: '1fr 300px', 
+                                        gap: '20px', 
+                                        alignItems: 'stretch',
+                                        width: '100%'
+                                      }}
                                     >
-                                      <div>
-                                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                                          {ind.name}
+                                      {/* Left Card: Historical Chart */}
+                                      <Card
+                                        size="small"
+                                        style={{ 
+                                          borderRadius: '12px', 
+                                          border: '1px solid #e2e8f0', 
+                                          boxShadow: '0 1px 3px rgba(0,0,0,0.01)', 
+                                          background: '#ffffff',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          height: '100%'
+                                        }}
+                                        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}
+                                      >
+                                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px', letterSpacing: '0.3px' }}>
+                                          {ind.name} (Trend)
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
-                                          <span style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
-                                            {formattedVal}{isPercent ? '%' : ` ${ind.unit}`}
+                                        <div style={{ height: '200px', width: '100%', flex: 1 }}>
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={ind.data} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+                                              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                              <XAxis dataKey="period" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                              <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                              <Tooltip 
+                                                formatter={(value: any) => [
+                                                  `${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}${isPercent ? '%' : ` ${ind.unit || ''}`}`,
+                                                  ind.name
+                                                ]}
+                                                labelFormatter={(label) => `Year: ${label}`}
+                                                contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
+                                              />
+                                              <Line
+                                                type="monotone"
+                                                dataKey="obsValue"
+                                                stroke="#2563eb"
+                                                strokeWidth={3}
+                                                dot={{ r: 3 }}
+                                                activeDot={{ r: 6 }}
+                                              />
+                                            </LineChart>
+                                          </ResponsiveContainer>
+                                        </div>
+                                      </Card>
+
+                                      {/* Right Card: Statistic callout */}
+                                      <Card
+                                        size="small"
+                                        style={{ 
+                                          borderRadius: '12px', 
+                                          border: '1px solid #dbeafe', 
+                                          boxShadow: '0 2px 4px rgba(37, 99, 235, 0.01)', 
+                                          background: '#eff6ff',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          justifyContent: 'space-between',
+                                          height: '100%'
+                                        }}
+                                        bodyStyle={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}
+                                      >
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            Latest Statistic
                                           </span>
+                                          <div style={{ display: 'flex', flexDirection: 'column', marginTop: '4px' }}>
+                                            <span style={{ fontSize: '28px', fontWeight: 800, color: '#1e3a8a', lineHeight: '1.1' }}>
+                                              {formattedVal}
+                                            </span>
+                                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginTop: '2px', lineHeight: '1.3' }}>
+                                              {isPercent ? '%' : ind.unit}
+                                            </span>
+                                          </div>
                                           {ind.latestYear && (
-                                            <span style={{ fontSize: '11px', color: '#64748b' }}>({ind.latestYear})</span>
+                                            <div style={{ marginTop: '8px' }}>
+                                              <span style={{ display: 'inline-block', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 600 }}>
+                                                Year: {ind.latestYear}
+                                              </span>
+                                            </div>
                                           )}
                                         </div>
-                                      </div>
 
-                                      {/* Card Chart */}
-                                      <div style={{ height: '160px', width: '100%', marginBottom: '10px' }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                          <LineChart data={ind.data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                            <XAxis dataKey="period" stroke="#94a3b8" fontSize={9} tickLine={false} />
-                                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
-                                            <Tooltip 
-                                              formatter={(value: any) => [
-                                                `${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}${isPercent ? '%' : ` ${ind.unit || ''}`}`,
-                                                ind.name
-                                              ]}
-                                              labelFormatter={(label) => `Year: ${label}`}
-                                              contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
-                                            />
-                                            <Line
-                                              type="monotone"
-                                              dataKey="obsValue"
-                                              stroke="#2563eb"
-                                              strokeWidth={2.5}
-                                              dot={{ r: 2 }}
-                                              activeDot={{ r: 5 }}
-                                            />
-                                          </LineChart>
-                                        </ResponsiveContainer>
-                                      </div>
-
-                                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Button
-                                          type="link"
-                                          size="small"
-                                          icon={<CompassOutlined />}
-                                          onClick={() => handleApplyToExplorer({
-                                            indicatorCode: ind.code,
-                                            indicatorName: ind.name,
-                                            economies: [msg.reportData!.economyCode],
-                                            periods: msg.reportData!.periods,
-                                            isGroup: false,
-                                            groupName: '',
-                                            data: ind.data
-                                          })}
-                                          style={{ padding: 0, fontSize: '12px', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                        >
-                                          Apply to Explorer
-                                        </Button>
-                                      </div>
-                                    </Card>
+                                        <div style={{ borderTop: '1px solid #dbeafe', paddingTop: '12px', marginTop: '12px' }}>
+                                          <Button
+                                            type="primary"
+                                            size="middle"
+                                            icon={<CompassOutlined />}
+                                            onClick={() => handleApplyToExplorer({
+                                              indicatorCode: ind.code,
+                                              indicatorName: ind.name,
+                                              economies: [msg.reportData!.economyCode],
+                                              periods: msg.reportData!.periods,
+                                              isGroup: false,
+                                              groupName: '',
+                                              data: ind.data
+                                            })}
+                                            style={{ 
+                                              width: '100%', 
+                                              background: '#2563eb', 
+                                              border: 'none', 
+                                              borderRadius: '8px', 
+                                              fontSize: '12px', 
+                                              display: 'flex', 
+                                              alignItems: 'center', 
+                                              justifyContent: 'center', 
+                                              gap: '6px' 
+                                            }}
+                                          >
+                                            Apply to Explorer
+                                          </Button>
+                                        </div>
+                                      </Card>
+                                    </div>
                                   );
                                 })}
                               </div>
