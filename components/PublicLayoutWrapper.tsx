@@ -49,7 +49,7 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
       <div className="header" style={{ position: 'sticky', top: 0, zIndex: 1000, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
         <section className="section-header">
           <div data-animation="over-right" className="navbar w-nav" data-easing2="ease" data-easing="ease" data-collapse="medium" role="banner" data-no-scroll="1" data-duration="400" data-doc-height="1">
-            <div className="container w-container" style={isFullWidthPage ? { maxWidth: 'none', width: '100%', paddingLeft: '24px', paddingRight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } : { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="container w-container" style={isFullWidthPage ? { maxWidth: 'none', width: '100%', paddingLeft: '40px', paddingRight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } : { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               
               {/* Brand Logo */}
               <Link href="/index.html" className="brand w-nav-brand">

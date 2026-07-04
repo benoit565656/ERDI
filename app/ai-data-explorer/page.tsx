@@ -180,7 +180,7 @@ export default function AiDataExplorerPage() {
     window.location.href = `/data-explorer?indicator=${inds}&economy=${ecos}&period=${periods}`;
   };
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '104px 20px 40px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+    <div style={{ width: '100%', maxWidth: '100%', padding: '104px 40px 40px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
       
       {/* HEADER SECTION */}
       <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', borderRadius: '16px', padding: '40px', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
@@ -414,7 +414,7 @@ export default function AiDataExplorerPage() {
                                         <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px', letterSpacing: '0.3px' }}>
                                           {ind.name} (Trend)
                                         </div>
-                                        <div style={{ height: '200px', width: '100%', flex: 1 }}>
+                                        <div style={{ height: '300px', width: '100%', flex: 1 }}>
                                           <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={ind.data} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                                               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
