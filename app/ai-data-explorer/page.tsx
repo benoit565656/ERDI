@@ -407,17 +407,28 @@ export default function AiDataExplorerPage() {
                                         </div>
                                       </div>
 
-                                      {/* Sparkline chart */}
-                                      <div style={{ height: '70px', width: '100%', marginBottom: '10px' }}>
+                                      {/* Card Chart */}
+                                      <div style={{ height: '160px', width: '100%', marginBottom: '10px' }}>
                                         <ResponsiveContainer width="100%" height="100%">
-                                          <LineChart data={ind.data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-                                            <Tooltip contentStyle={{ borderRadius: 6, fontSize: '11px' }} />
+                                          <LineChart data={ind.data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                            <XAxis dataKey="period" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                            <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                            <Tooltip 
+                                              formatter={(value: any) => [
+                                                `${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}${isPercent ? '%' : ` ${ind.unit || ''}`}`,
+                                                ind.name
+                                              ]}
+                                              labelFormatter={(label) => `Year: ${label}`}
+                                              contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
+                                            />
                                             <Line
                                               type="monotone"
                                               dataKey="obsValue"
                                               stroke="#2563eb"
                                               strokeWidth={2.5}
-                                              dot={false}
+                                              dot={{ r: 2 }}
+                                              activeDot={{ r: 5 }}
                                             />
                                           </LineChart>
                                         </ResponsiveContainer>

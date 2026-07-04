@@ -138,14 +138,31 @@ export async function POST(req: Request) {
     const isReportRequest = lastUserMessage.includes('report') || lastUserMessage.includes('dashboard') || lastUserMessage.includes('economy') || lastUserMessage.includes('outlook') || (!resolvedIndicator && resolvedEconomy);
 
     if (isReportRequest) {
-      const reportIndicators = [
-        { code: 'LP_PE_NUM_MOP', name: 'Total Population', category: 'Demographics', unit: 'Million' },
-        { code: 'LP_MOP_PTX_PS', name: 'Population growth rate', category: 'Demographics', unit: 'Percent (%)' },
-        { code: 'LLF_PE_NUM', name: 'Labor Force', category: 'Demographics', unit: 'Million' },
-        { code: 'NGDP_XDC', name: 'GDP at current prices', category: 'Economy & Growth', unit: 'Trillion' },
-        { code: 'NGDPR_GR', name: 'GDP Growth Rate', category: 'Economy & Growth', unit: 'Percent (%)' },
-        { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', unit: 'Percent (%)' }
-      ];
+      // 1. Determine relevant indicators dynamically based on prompt intent
+      const includeDemographics = lastUserMessage.includes('population') || lastUserMessage.includes('demographic') || lastUserMessage.includes('labor') || lastUserMessage.includes('people') || lastUserMessage.includes('unemployment') || (!lastUserMessage.includes('economy') && !lastUserMessage.includes('gdp') && !lastUserMessage.includes('inflation'));
+      const includeEconomy = lastUserMessage.includes('economy') || lastUserMessage.includes('gdp') || lastUserMessage.includes('growth') || lastUserMessage.includes('inflation') || lastUserMessage.includes('cpi') || lastUserMessage.includes('trade') || (!lastUserMessage.includes('population') && !lastUserMessage.includes('demographic'));
+
+      const reportIndicators = [];
+      if (includeDemographics) {
+        reportIndicators.push(
+          { code: 'LP_PE_NUM_MOP', name: 'Total Population', category: 'Demographics' },
+          { code: 'LP_MOP_PTX_PS', name: 'Population growth rate', category: 'Demographics', isPercent: true },
+          { code: 'LLF_PE_NUM', name: 'Labor Force', category: 'Demographics' }
+        );
+      }
+      if (includeEconomy) {
+        reportIndicators.push(
+          { code: 'NGDP_XDC', name: 'GDP at current prices', category: 'Economy & Growth' },
+          { code: 'NGDPR_GR', name: 'GDP Growth Rate', category: 'Economy & Growth', isPercent: true },
+          { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', isPercent: true }
+        );
+      }
+
+      const multipliers = await prisma.commonMultiplier.findMany();
+      const multMap = new Map(multipliers.map(m => [m.code, m]));
+
+      const units = await prisma.commonUnit.findMany();
+      const unitMap = new Map(units.map(u => [u.code, u.name]));
 
       const observations = await prisma.observation.findMany({
         where: {
@@ -159,34 +176,120 @@ export async function POST(req: Request) {
           indicatorCode: true,
           economyCode: true,
           period: true,
-          obsValue: true
+          obsValue: true,
+          unitCode: true,
+          unitMultCode: true
         }
       });
+
+      const formatDynamicValue = (val: number, multiplierFactor: number, unitName: string, isPercent?: boolean) => {
+        if (isPercent) {
+          return {
+            valueStr: val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+            unitStr: '%'
+          };
+        }
+
+        const absoluteValue = val * multiplierFactor;
+        let scale = 1;
+        let suffix = '';
+
+        if (absoluteValue >= 1e12) {
+          scale = 1e12;
+          suffix = 'Trillion';
+        } else if (absoluteValue >= 1e9) {
+          scale = 1e9;
+          suffix = 'Billion';
+        } else if (absoluteValue >= 1e6) {
+          scale = 1e6;
+          suffix = 'Million';
+        } else if (absoluteValue >= 1e3) {
+          scale = 1e3;
+          suffix = 'Thousand';
+        } else {
+          scale = 1;
+          suffix = '';
+        }
+
+        const scaledVal = absoluteValue / scale;
+        const valueStr = scaledVal.toLocaleString(undefined, { 
+          minimumFractionDigits: 0, 
+          maximumFractionDigits: 2 
+        });
+
+        let cleanUnit = unitName || '';
+        if (cleanUnit.toLowerCase() === 'percent' || cleanUnit.toLowerCase() === 'percentage' || cleanUnit === '%') {
+          return { valueStr, unitStr: '%' };
+        }
+
+        let unitStr = '';
+        if (suffix) {
+          if (cleanUnit && cleanUnit.toLowerCase() !== 'persons' && cleanUnit.toLowerCase() !== 'units') {
+            unitStr = `${suffix} ${cleanUnit}`;
+          } else {
+            unitStr = suffix;
+          }
+        } else {
+          if (cleanUnit && cleanUnit.toLowerCase() !== 'persons' && cleanUnit.toLowerCase() !== 'units') {
+            unitStr = cleanUnit;
+          } else {
+            unitStr = '';
+          }
+        }
+
+        return { valueStr, unitStr };
+      };
 
       const reportData: Record<string, any> = {};
       for (const repInd of reportIndicators) {
         const indObs = observations.filter(o => o.indicatorCode === repInd.code);
         if (indObs.length === 0) continue;
         
-        const sortedObs = indObs.map(obs => ({
-          period: obs.period,
-          obsValue: obs.obsValue ? Number(Number(obs.obsValue).toFixed(4)) : null,
-          economyCode: obs.economyCode,
-          economyName: economyName,
-          indicatorCode: obs.indicatorCode,
-          indicatorName: repInd.name,
-          unit: repInd.unit
-        })).sort((a, b) => Number(a.period) - Number(b.period));
+        const firstObs = indObs[0];
+        const mult = firstObs.unitMultCode ? multMap.get(firstObs.unitMultCode) : undefined;
+        const multiplierFactor = mult?.factor ? Number(mult.factor) : 1;
+        const unitName = firstObs.unitCode ? (unitMap.get(firstObs.unitCode) || firstObs.unitCode) : '';
+
+        const sortedObs = indObs.map(obs => {
+          const rawVal = Number(obs.obsValue || 0);
+          const absoluteValue = rawVal * multiplierFactor;
+          
+          let scale = 1;
+          if (repInd.isPercent) {
+            scale = 1;
+          } else if (absoluteValue >= 1e12) {
+            scale = 1e12;
+          } else if (absoluteValue >= 1e9) {
+            scale = 1e9;
+          } else if (absoluteValue >= 1e6) {
+            scale = 1e6;
+          } else if (absoluteValue >= 1e3) {
+            scale = 1e3;
+          }
+
+          const scaledVal = absoluteValue / scale;
+
+          return {
+            period: obs.period,
+            obsValue: Number(scaledVal.toFixed(4)),
+            economyCode: obs.economyCode,
+            economyName: economyName,
+            indicatorCode: obs.indicatorCode,
+            indicatorName: repInd.name
+          };
+        }).sort((a, b) => Number(a.period) - Number(b.period));
 
         const latest = sortedObs[sortedObs.length - 1];
+        const latestRaw = indObs.find(o => o.period === latest.period);
+        const { valueStr, unitStr } = formatDynamicValue(Number(latestRaw?.obsValue || 0), multiplierFactor, unitName, repInd.isPercent);
         
         reportData[repInd.code] = {
           code: repInd.code,
           name: repInd.name,
           category: repInd.category,
-          unit: repInd.unit,
+          unit: unitStr,
           data: sortedObs,
-          latestValue: latest ? latest.obsValue : null,
+          latestValue: valueStr,
           latestYear: latest ? latest.period : null
         };
       }
