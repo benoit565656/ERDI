@@ -600,16 +600,30 @@ async function resolveQueryParameters(prompt: string) {
   if (prompt.includes('gdp growth') || prompt.includes('economic growth')) {
     resolvedIndicator = 'NGDPR_GR';
   } else if (prompt.includes('gdp') || prompt.includes('gross domestic product')) {
-    // If they ask for constant price specifically
     if (prompt.includes('constant')) {
       resolvedIndicator = 'NGDP_R_XDC';
-    } else {
+    } else if (prompt.includes('current')) {
       resolvedIndicator = 'NGDP_XDC';
+    } else {
+      requiresClarification = true;
+      matchedIndicators = [
+        { code: 'NGDP_XDC', name: 'GDP at current prices (Nominal GDP)', description: 'Gross domestic product in current values.' },
+        { code: 'NGDP_R_XDC', name: 'GDP at constant prices (Real GDP)', description: 'Gross domestic product in constant base-year values.' },
+        { code: 'NGDPR_GR', name: 'GDP Growth Rate (% annual change)', description: 'Annual percentage growth rate of Gross domestic product.' }
+      ];
     }
   } else if (prompt.includes('population growth')) {
     resolvedIndicator = 'LP_MOP_PTX_PS';
   } else if (prompt.includes('population')) {
-    resolvedIndicator = 'LP_PE_NUM_MOP';
+    if (prompt.includes('growth')) {
+      resolvedIndicator = 'LP_MOP_PTX_PS';
+    } else {
+      requiresClarification = true;
+      matchedIndicators = [
+        { code: 'LP_PE_NUM_MOP', name: 'Total Population', description: 'Total midyear population.' },
+        { code: 'LP_MOP_PTX_PS', name: 'Population growth rate (% annual change)', description: 'Annual population growth rate.' }
+      ];
+    }
   } else if (prompt.includes('inflation') || prompt.includes('cpi')) {
     resolvedIndicator = 'CPI_PC';
   } else if (prompt.includes('labor force') || prompt.includes('employment')) {
