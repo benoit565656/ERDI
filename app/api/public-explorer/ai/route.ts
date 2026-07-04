@@ -256,45 +256,124 @@ export async function POST(req: Request) {
         const multiplierFactor = mult?.factor ? Number(mult.factor) : 1;
         const unitName = firstObs.unitCode ? (unitMap.get(firstObs.unitCode) || firstObs.unitCode) : '';
 
-        const sortedObs = indObs.map(obs => {
-          const rawVal = Number(obs.obsValue || 0);
-          const absoluteValue = rawVal * multiplierFactor;
-          
-          let scale = 1;
-          if (repInd.isPercent) {
-            scale = 1;
-          } else if (absoluteValue >= 1e12) {
-            scale = 1e12;
-          } else if (absoluteValue >= 1e9) {
-            scale = 1e9;
-          } else if (absoluteValue >= 1e6) {
-            scale = 1e6;
-          } else if (absoluteValue >= 1e3) {
-            scale = 1e3;
+        let aggregatedPeriodObs = [];
+
+        if (isGroupAggregation) {
+          const periodGroups: Record<string, any[]> = {};
+          indObs.forEach(obs => {
+            if (!periodGroups[obs.period]) periodGroups[obs.period] = [];
+            periodGroups[obs.period].push(obs);
+          });
+
+          const isSum = repInd.code === 'LP_PE_NUM_MOP' || repInd.code === 'LLF_PE_NUM';
+
+          for (const period of periods.sort()) {
+            const periodObs = periodGroups[period] || [];
+            if (periodObs.length === 0) continue;
+
+            let aggregatedValue = null;
+            if (isSum) {
+              let sum = 0;
+              periodObs.forEach(o => {
+                if (o.obsValue) sum += Number(o.obsValue);
+              });
+              aggregatedValue = sum;
+            } else {
+              const weightInd = 'LP_PE_NUM_MOP';
+              const weightObs = await prisma.observation.findMany({
+                where: {
+                  indicatorCode: weightInd,
+                  economyCode: { in: targetEconomies },
+                  period: period
+                },
+                select: { economyCode: true, obsValue: true }
+              });
+
+              const weightMap = new Map(weightObs.map(w => [w.economyCode, Number(w.obsValue || 0)]));
+              let totalWeight = 0;
+              let weightedSum = 0;
+
+              periodObs.forEach(o => {
+                const w = weightMap.get(o.economyCode) || 1;
+                if (o.obsValue) {
+                  weightedSum += Number(o.obsValue) * w;
+                  totalWeight += w;
+                }
+              });
+
+              aggregatedValue = totalWeight > 0 ? (weightedSum / totalWeight) : null;
+            }
+
+            if (aggregatedValue !== null) {
+              const absoluteValue = aggregatedValue * multiplierFactor;
+              let scale = 1;
+              if (repInd.isPercent) {
+                scale = 1;
+              } else if (absoluteValue >= 1e12) {
+                scale = 1e12;
+              } else if (absoluteValue >= 1e9) {
+                scale = 1e9;
+              } else if (absoluteValue >= 1e6) {
+                scale = 1e6;
+              } else if (absoluteValue >= 1e3) {
+                scale = 1e3;
+              }
+
+              const scaledVal = absoluteValue / scale;
+
+              aggregatedPeriodObs.push({
+                period,
+                obsValue: Number(scaledVal.toFixed(4)),
+                economyCode: 'REGION',
+                economyName: groupName.toUpperCase(),
+                indicatorCode: repInd.code,
+                indicatorName: repInd.name
+              });
+            }
           }
+        } else {
+          aggregatedPeriodObs = indObs.map(obs => {
+            const rawVal = Number(obs.obsValue || 0);
+            const absoluteValue = rawVal * multiplierFactor;
+            
+            let scale = 1;
+            if (repInd.isPercent) {
+              scale = 1;
+            } else if (absoluteValue >= 1e12) {
+              scale = 1e12;
+            } else if (absoluteValue >= 1e9) {
+              scale = 1e9;
+            } else if (absoluteValue >= 1e6) {
+              scale = 1e6;
+            } else if (absoluteValue >= 1e3) {
+              scale = 1e3;
+            }
 
-          const scaledVal = absoluteValue / scale;
+            const scaledVal = absoluteValue / scale;
 
-          return {
-            period: obs.period,
-            obsValue: Number(scaledVal.toFixed(4)),
-            economyCode: obs.economyCode,
-            economyName: economyName,
-            indicatorCode: obs.indicatorCode,
-            indicatorName: repInd.name
-          };
-        }).sort((a, b) => Number(a.period) - Number(b.period));
+            return {
+              period: obs.period,
+              obsValue: Number(scaledVal.toFixed(4)),
+              economyCode: obs.economyCode,
+              economyName: economyName,
+              indicatorCode: obs.indicatorCode,
+              indicatorName: repInd.name
+            };
+          }).sort((a, b) => Number(a.period) - Number(b.period));
+        }
 
-        const latest = sortedObs[sortedObs.length - 1];
-        const latestRaw = indObs.find(o => o.period === latest.period);
-        const { valueStr, unitStr } = formatDynamicValue(Number(latestRaw?.obsValue || 0), multiplierFactor, unitName, repInd.isPercent);
+        if (aggregatedPeriodObs.length === 0) continue;
+
+        const latest = aggregatedPeriodObs[aggregatedPeriodObs.length - 1];
+        const latestValRaw = Number(latest.obsValue);
+        const { valueStr, unitStr } = formatDynamicValue(latestValRaw, 1, unitName, repInd.isPercent);
         
         reportData[repInd.code] = {
           code: repInd.code,
           name: repInd.name,
           category: repInd.category,
           unit: unitStr,
-          data: sortedObs,
+          data: aggregatedPeriodObs,
           latestValue: valueStr,
           latestYear: latest ? latest.period : null
         };
