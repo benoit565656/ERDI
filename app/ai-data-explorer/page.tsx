@@ -72,6 +72,8 @@ interface Message {
       }>;
       latestValue: number | null;
       latestYear: string | null;
+      source?: string;
+      methodology?: string;
     }>;
   };
 }
@@ -438,10 +440,10 @@ export default function AiDataExplorerPage() {
                                         <PieChart>
                                            <Pie
                                             data={pieData}
-                                            cx="50%"
-                                            cy="42%"
-                                            innerRadius={55}
-                                            outerRadius={75}
+                                             cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={85}
                                             paddingAngle={3}
                                             dataKey="value"
                                             label={({ percent }) => `${((percent || 0) * 100).toFixed(1)}%`}
@@ -455,9 +457,12 @@ export default function AiDataExplorerPage() {
                                             formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Share of GDP']}
                                             contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
                                           />
-                                          <Legend verticalAlign="bottom" align="center" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', bottom: 5 }} />
+                                          <Legend verticalAlign="bottom" align="center" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                                         </PieChart>
                                       </ResponsiveContainer>
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', textAlign: 'center' }}>
+                                      <strong>Source:</strong> Key Indicators Database (KIDB)
                                     </div>
                                   </Card>
 
@@ -565,10 +570,13 @@ export default function AiDataExplorerPage() {
                                         }}
                                         bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}
                                       >
-                                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px', letterSpacing: '0.3px' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '4px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px', letterSpacing: '0.3px' }}>
                                           {ind.name} (Trend)
                                         </div>
-                                        <div style={{ height: '300px', width: '100%', flex: 1 }}>
+                                        <div style={{ fontSize: '10.5px', color: '#64748b', marginBottom: '10px', fontWeight: 500 }}>
+                                          Unit: {ind.unit || 'Index'}
+                                        </div>
+                                        <div style={{ height: '280px', width: '100%', flex: 1 }}>
                                           <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={ind.data} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                                               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -593,6 +601,16 @@ export default function AiDataExplorerPage() {
                                             </LineChart>
                                           </ResponsiveContainer>
                                         </div>
+                                        {ind.source && (
+                                          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', lineHeight: '1.4' }}>
+                                            <strong>Source:</strong> {ind.source}
+                                            {ind.methodology && (
+                                              <div style={{ marginTop: '3px', fontSize: '9.5px', color: '#94a3b8' }}>
+                                                <strong>Methodology:</strong> {ind.methodology}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
                                       </Card>
 
                                       {/* Right Card: Statistic callout */}

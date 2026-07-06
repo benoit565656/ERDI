@@ -143,6 +143,28 @@ export async function POST(req: Request) {
       const includeEconomy = lastUserMessage.includes('economy') || lastUserMessage.includes('gdp') || lastUserMessage.includes('growth') || lastUserMessage.includes('inflation') || lastUserMessage.includes('cpi') || lastUserMessage.includes('trade') || (!lastUserMessage.includes('population') && !lastUserMessage.includes('demographic'));
 
       const reportIndicators = [];
+      if (includeEconomy) {
+        reportIndicators.push(
+          { code: 'NGDPR_GR', name: 'GDP Growth Rate', category: 'Economy & Growth', isPercent: true },
+          { code: 'NGDP_XDC', name: 'GDP at current prices', category: 'Economy & Growth' },
+          { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', isPercent: true },
+          // Sectoral GDP Structure
+          { code: 'NGDPSO_AGR_XGDP_PS', name: 'Agriculture value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'NGDPSO_IND_XGDP_PS', name: 'Industry value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'NGDPSO_SER_XGDP_PS', name: 'Services value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          // Additional key indicators by relevance
+          { code: 'TRADESHARE_INT', name: 'Trade Share (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'BXG_BP6_XGDP_PS', name: 'Exports of Goods and Services (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'BMG_BP6_XGDP_PS', name: 'Imports of Goods and Services (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'DT_DOD_DECT_GDP_ZS_PS', name: 'External Debt (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'BX_TRF_PWKR_DT_GD_ZS', name: 'Remittances Inflows (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'FDI_CC_SHARE_BOP', name: 'Inward FDI Share (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'GX_G14_GG_XGDP_PS', name: 'Government Expenditure (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'GR_G14_GG_XGDP_PS', name: 'Government Revenue (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'FM2_XGDP_PS', name: 'Money Supply (% of GDP)', category: 'Economy & Growth', isPercent: true },
+          { code: 'FM2_PTX_PS', name: 'Money Supply Growth Rate (% annual)', category: 'Economy & Growth', isPercent: true }
+        );
+      }
       if (includeDemographics) {
         reportIndicators.push(
           { code: 'LP_PE_NUM_MOP', name: 'Total Population', category: 'Demographics' },
@@ -151,24 +173,18 @@ export async function POST(req: Request) {
           { code: 'LUR_PT', name: 'Unemployment Rate', category: 'Demographics', isPercent: true }
         );
       }
-      if (includeEconomy) {
-        reportIndicators.push(
-          { code: 'NGDP_XDC', name: 'GDP at current prices', category: 'Economy & Growth' },
-          { code: 'NGDPR_GR', name: 'GDP Growth Rate', category: 'Economy & Growth', isPercent: true },
-          { code: 'CPI_PC', name: 'CPI Inflation', category: 'Economy & Growth', isPercent: true },
-          { code: 'NGDPSO_AGR_XGDP_PS', name: 'Agriculture value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
-          { code: 'NGDPSO_IND_XGDP_PS', name: 'Industry value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
-          { code: 'NGDPSO_SER_XGDP_PS', name: 'Services value-added (% of GDP)', category: 'Economy & Growth', isPercent: true },
-          { code: 'BXG_BP6_XGDP_PS', name: 'Exports of Goods and Services (% of GDP)', category: 'Economy & Growth', isPercent: true },
-          { code: 'BMG_BP6_XGDP_PS', name: 'Imports of Goods and Services (% of GDP)', category: 'Economy & Growth', isPercent: true }
-        );
-      }
 
       const multipliers = await prisma.commonMultiplier.findMany();
       const multMap = new Map(multipliers.map(m => [m.code, m]));
 
       const units = await prisma.commonUnit.findMany();
       const unitMap = new Map(units.map(u => [u.code, u.name]));
+
+      const indicatorsDb = await prisma.indicator.findMany({
+        where: { code: { in: reportIndicators.map(r => r.code) } },
+        select: { code: true, source: true, methodology: true }
+      });
+      const indicatorDbMap = new Map(indicatorsDb.map(i => [i.code, i]));
 
       const observations = await prisma.observation.findMany({
         where: {
@@ -368,6 +384,7 @@ export async function POST(req: Request) {
         const latestValRaw = Number(latest.obsValue);
         const { valueStr, unitStr } = formatDynamicValue(latestValRaw, 1, unitName, repInd.isPercent);
         
+        const dbInfo = indicatorDbMap.get(repInd.code);
         reportData[repInd.code] = {
           code: repInd.code,
           name: repInd.name,
@@ -375,7 +392,9 @@ export async function POST(req: Request) {
           unit: unitStr,
           data: aggregatedPeriodObs,
           latestValue: valueStr,
-          latestYear: latest ? latest.period : null
+          latestYear: latest ? latest.period : null,
+          source: dbInfo?.source || 'Key Indicators Database (KIDB)',
+          methodology: dbInfo?.methodology || ''
         };
       }
 
