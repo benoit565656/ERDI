@@ -244,7 +244,8 @@ export default function AiDataExplorerPage() {
                     gap: '12px', 
                     alignItems: 'flex-start',
                     alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: msg.type === 'dashboard' ? '100%' : '80%'
+                    width: (msg.type === 'dashboard' || msg.type === 'report') ? '100%' : 'auto',
+                    maxWidth: (msg.type === 'dashboard' || msg.type === 'report') ? '100%' : '80%'
                   }}
                 >
                   {msg.sender === 'ai' && (
@@ -253,7 +254,7 @@ export default function AiDataExplorerPage() {
                     </div>
                   )}
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', flex: 1 }}>
                     {/* Text Message Content */}
                     <div 
                       style={{ 
@@ -435,15 +436,16 @@ export default function AiDataExplorerPage() {
                                     <div style={{ height: '300px', width: '100%', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                       <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
-                                          <Pie
+                                           <Pie
                                             data={pieData}
                                             cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={90}
+                                            cy="42%"
+                                            innerRadius={55}
+                                            outerRadius={75}
                                             paddingAngle={3}
                                             dataKey="value"
-                                            label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(1)}%)`}
+                                            label={({ percent }) => `${((percent || 0) * 100).toFixed(1)}%`}
+                                            labelLine={true}
                                           >
                                             {pieData.map((entry, index) => (
                                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -453,7 +455,7 @@ export default function AiDataExplorerPage() {
                                             formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Share of GDP']}
                                             contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
                                           />
-                                          <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                          <Legend verticalAlign="bottom" align="center" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', bottom: 5 }} />
                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>
