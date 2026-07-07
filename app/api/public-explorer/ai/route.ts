@@ -204,6 +204,15 @@ export async function POST(req: Request) {
         }
       });
 
+      const uniqueObsMap = new Map<string, typeof observations[number]>();
+      observations.forEach(obs => {
+        const key = `${obs.indicatorCode}_${obs.economyCode}_${obs.period}`;
+        if (!uniqueObsMap.has(key) || (obs.obsValue !== null && uniqueObsMap.get(key)?.obsValue === null)) {
+          uniqueObsMap.set(key, obs);
+        }
+      });
+      const deduplicatedObservations = Array.from(uniqueObsMap.values());
+
       const formatDynamicValue = (val: number, multiplierFactor: number, unitName: string, isPercent?: boolean) => {
         if (isPercent) {
           return {
@@ -264,7 +273,7 @@ export async function POST(req: Request) {
 
       const reportData: Record<string, any> = {};
       for (const repInd of reportIndicators) {
-        const indObs = observations.filter(o => o.indicatorCode === repInd.code);
+        const indObs = deduplicatedObservations.filter(o => o.indicatorCode === repInd.code);
         if (indObs.length === 0) continue;
         
         const firstObs = indObs[0];
@@ -385,6 +394,30 @@ export async function POST(req: Request) {
         const { valueStr, unitStr } = formatDynamicValue(latestValRaw, 1, unitName, repInd.isPercent);
         
         const dbInfo = indicatorDbMap.get(repInd.code);
+        const ACTUAL_SOURCES: Record<string, string> = {
+          'LP_PE_NUM_MOP': 'United Nations Population Division, World Bank, and National Statistical Offices (NSOs)',
+          'LP_MOP_PTX_PS': 'United Nations Population Division, World Bank, and National Statistical Offices (NSOs)',
+          'LLF_PE_NUM': 'International Labour Organization (ILO) and National Statistical Offices (NSOs)',
+          'LUR_PT': 'International Labour Organization (ILO) and National Statistical Offices (NSOs)',
+          'NGDP_XDC': 'Asian Development Bank (ADB) and National Statistical Offices (NSOs)',
+          'NGDPR_GR': 'Asian Development Bank (ADB) and National Statistical Offices (NSOs)',
+          'NGDPSO_AGR_XGDP_PS': 'Asian Development Bank (ADB) and National Statistical Offices (NSOs)',
+          'NGDPSO_IND_XGDP_PS': 'Asian Development Bank (ADB) and National Statistical Offices (NSOs)',
+          'NGDPSO_SER_XGDP_PS': 'Asian Development Bank (ADB) and National Statistical Offices (NSOs)',
+          'CPI_PC': 'International Monetary Fund (IMF) International Financial Statistics, and National Statistical Offices (NSOs)',
+          'BXG_BP6_XGDP_PS': 'International Monetary Fund (IMF) Balance of Payments Statistics and Central Banks',
+          'BMG_BP6_XGDP_PS': 'International Monetary Fund (IMF) Balance of Payments Statistics and Central Banks',
+          'FDI_CC_SHARE_BOP': 'International Monetary Fund (IMF) Balance of Payments Statistics and Central Banks',
+          'BX_TRF_PWKR_DT_GD_ZS': 'International Monetary Fund (IMF) Balance of Payments Statistics and Central Banks',
+          'DT_DOD_DECT_GDP_ZS_PS': 'World Bank International Debt Statistics and Ministry of Finance',
+          'GR_G14_GG_XGDP_PS': 'Asian Development Bank (ADB), International Monetary Fund (IMF), and Ministry of Finance',
+          'GX_G14_GG_XGDP_PS': 'Asian Development Bank (ADB), International Monetary Fund (IMF), and Ministry of Finance',
+          'FM2_XGDP_PS': 'International Monetary Fund (IMF) Monetary and Financial Statistics and Central Banks',
+          'FM2_PTX_PS': 'International Monetary Fund (IMF) Monetary and Financial Statistics and Central Banks',
+          'TRADESHARE_INT': 'Asian Development Bank (ADB) calculations based on UN Comtrade database'
+        };
+        const actualSource = ACTUAL_SOURCES[repInd.code] || dbInfo?.source || 'Key Indicators Database (KIDB)';
+
         reportData[repInd.code] = {
           code: repInd.code,
           name: repInd.name,
@@ -393,7 +426,7 @@ export async function POST(req: Request) {
           data: aggregatedPeriodObs,
           latestValue: valueStr,
           latestYear: latest ? latest.period : null,
-          source: dbInfo?.source || 'Key Indicators Database (KIDB)',
+          source: actualSource,
           methodology: dbInfo?.methodology || ''
         };
       }
@@ -480,13 +513,22 @@ Report Data: ${JSON.stringify(reportData)}`;
       }
     });
 
+    const uniqueObsMap = new Map<string, typeof observations[number]>();
+    observations.forEach(obs => {
+      const key = `${obs.indicatorCode}_${obs.economyCode}_${obs.period}`;
+      if (!uniqueObsMap.has(key) || (obs.obsValue !== null && uniqueObsMap.get(key)?.obsValue === null)) {
+        uniqueObsMap.set(key, obs);
+      }
+    });
+    const deduplicatedObservations = Array.from(uniqueObsMap.values());
+
     // 3. Process Dynamic calculations
     let processedData: any[] = [];
     const kb = indicatorKnowledge[targetIndicators[0]] || { name: 'Indicator', aggregation: 'SUM', unit: 'index' };
 
     if (isGroupAggregation) {
       const periodGroups: Record<string, any[]> = {};
-      observations.forEach(obs => {
+      deduplicatedObservations.forEach(obs => {
         if (!periodGroups[obs.period]) periodGroups[obs.period] = [];
         periodGroups[obs.period].push(obs);
       });
@@ -545,7 +587,7 @@ Report Data: ${JSON.stringify(reportData)}`;
       });
       const ecoMap = new Map(economyNames.map(e => [e.code, e.name]));
 
-      processedData = observations.map(obs => ({
+      processedData = deduplicatedObservations.map(obs => ({
         period: obs.period,
         economyCode: obs.economyCode,
         economyName: ecoMap.get(obs.economyCode) || obs.economyCode,

@@ -440,25 +440,24 @@ export default function AiDataExplorerPage() {
                                         <PieChart>
                                            <Pie
                                             data={pieData}
-                                             cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={85}
-                                            paddingAngle={3}
-                                            dataKey="value"
-                                            label={({ percent }) => `${((percent || 0) * 100).toFixed(1)}%`}
-                                            labelLine={true}
-                                          >
-                                            {pieData.map((entry, index) => (
-                                              <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                          </Pie>
-                                          <Tooltip 
-                                            formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Share of GDP']}
-                                            contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
-                                          />
-                                          <Legend verticalAlign="bottom" align="center" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                                        </PieChart>
+                                              cx="50%"
+                                             cy="50%"
+                                             innerRadius={70}
+                                             outerRadius={95}
+                                             paddingAngle={3}
+                                             dataKey="value"
+                                             label={({ percent }) => `${((percent || 0) * 100).toFixed(1)}%`}
+                                             labelLine={true}
+                                           >
+                                             {pieData.map((entry, index) => (
+                                               <Cell key={`cell-${index}`} fill={entry.color} />
+                                             ))}
+                                           </Pie>
+                                           <Tooltip 
+                                             formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Share of GDP']}
+                                             contentStyle={{ borderRadius: 8, fontSize: '11px', border: '1px solid #e2e8f0' }}
+                                           />
+                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>
                                     <div style={{ fontSize: '10px', color: '#64748b', marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', textAlign: 'center' }}>
